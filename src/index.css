@@ -1,0 +1,136 @@
+/* Fuente geométrica similar a Grift */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-dark-500 text-gray-100 antialiased;
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(62, 207, 142, 0.08), transparent);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    @apply font-semibold tracking-tight;
+  }
+
+  /* Scrollbar estilo Supabase */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #1C1C1C;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #3E3E3E;
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #4E4E4E;
+  }
+}
+
+@layer components {
+  /* Botones */
+  .btn {
+    @apply px-4 py-2.5 rounded-md font-medium transition-all duration-200 text-sm;
+  }
+
+  .btn-primary {
+    @apply bg-brand hover:bg-brand-500 text-dark-500 shadow-sm hover:shadow-glow;
+  }
+
+  .btn-secondary {
+    @apply bg-surface-100 hover:bg-surface-200 text-gray-200 border border-border;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent hover:bg-surface-100 text-gray-300 hover:text-white;
+  }
+
+  .btn-danger {
+    @apply bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-600/30;
+  }
+
+  /* Cards */
+  .card {
+    @apply bg-surface-100/50 backdrop-blur-sm rounded-lg p-5 border border-border transition-all duration-200;
+  }
+
+  .card-hover {
+    @apply hover:border-border-light hover:bg-surface-100;
+  }
+
+  /* Inputs */
+  .input {
+    @apply w-full px-4 py-2.5 bg-surface-200 border border-border rounded-md text-white
+           placeholder-gray-500 transition-all duration-200
+           focus:outline-none focus:border-brand/50 focus:ring-2 focus:ring-brand/20;
+  }
+
+  /* Badges */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-brand {
+    @apply bg-brand/20 text-brand;
+  }
+
+  .badge-gray {
+    @apply bg-gray-700/50 text-gray-300;
+  }
+
+  /* Separador */
+  .divider {
+    @apply border-t border-border;
+  }
+
+  /* Texto con gradiente */
+  .text-gradient {
+    @apply bg-gradient-to-r from-brand to-brand-300 bg-clip-text text-transparent;
+  }
+
+  /* Glow effect */
+  .glow {
+    @apply shadow-glow;
+  }
+
+  /* Nav item activo */
+  .nav-active {
+    @apply bg-surface-100 text-brand border-brand/30;
+  }
+
+  /* Animaciones */
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Skeleton loading */
+  .skeleton {
+    @apply bg-surface-100 animate-pulse rounded;
+  }
+}
