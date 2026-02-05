@@ -5,6 +5,15 @@ import { useAuth } from '../hooks/useAuth'
 import { Icons } from '../components/Icons'
 import UserAvatar from '../components/UserAvatar'
 
+// Función para obtener la semana del año (usada para seleccionar la reco semanal)
+const getWeekNumber = () => {
+  const now = new Date()
+  const start = new Date(now.getFullYear(), 0, 1)
+  const diff = now - start
+  const oneWeek = 1000 * 60 * 60 * 24 * 7
+  return Math.floor(diff / oneWeek)
+}
+
 export default function Feed() {
   const [recommendations, setRecommendations] = useState([])
   const [filteredRecs, setFilteredRecs] = useState([])
@@ -14,6 +23,7 @@ export default function Feed() {
   const [selectedGenre, setSelectedGenre] = useState('all')
   const [selectedType, setSelectedType] = useState('all') // 'all', 'movie', 'tv'
   const [availableGenres, setAvailableGenres] = useState([]) // Géneros extraídos de las recomendaciones
+  const [weeklyPick, setWeeklyPick] = useState(null) // Recomendación de la semana
   const { user } = useAuth()
   const navigate = useNavigate()
 
@@ -50,6 +60,19 @@ export default function Feed() {
       .sort()
 
     setAvailableGenres(genres)
+  }, [recommendations])
+
+  // Seleccionar recomendación de la semana (basada en la semana del año)
+  useEffect(() => {
+    if (recommendations.length === 0) {
+      setWeeklyPick(null)
+      return
+    }
+
+    // Usar la semana del año como "seed" para seleccionar consistentemente
+    const weekNum = getWeekNumber()
+    const index = weekNum % recommendations.length
+    setWeeklyPick(recommendations[index])
   }, [recommendations])
 
   // Filtrar recomendaciones cuando cambian los filtros
@@ -211,6 +234,102 @@ export default function Feed() {
         <h1 className="text-2xl font-semibold text-white">Feed</h1>
         <p className="text-gray-500 mt-1">Descubrí qué están viendo tus amigos</p>
       </div>
+
+      {/* Recomendación de la Semana */}
+      {weeklyPick && (
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-3">
+            <Icons.StarFilled className="w-5 h-5 text-yellow-500" />
+            <h2 className="text-lg font-semibold text-white">Recomendación de la Semana</h2>
+          </div>
+          <div
+            onClick={() => navigate(`/post/${weeklyPick.id}`)}
+            className="relative overflow-hidden rounded-xl cursor-pointer group"
+          >
+            {/* Background con poster blur */}
+            <div className="absolute inset-0">
+              {weeklyPick.poster_url ? (
+                <img
+                  src={weeklyPick.poster_url}
+                  alt=""
+                  className="w-full h-full object-cover blur-sm scale-110 opacity-30"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-r from-brand/20 to-purple-500/20" />
+              )}
+              <div className="absolute inset-0 bg-gradient-to-r from-surface-200/95 via-surface-200/80 to-transparent" />
+            </div>
+
+            {/* Content */}
+            <div className="relative p-5 flex gap-5">
+              {/* Poster */}
+              {weeklyPick.poster_url ? (
+                <img
+                  src={weeklyPick.poster_url}
+                  alt={weeklyPick.title}
+                  className="w-28 h-40 object-cover rounded-lg shadow-xl flex-shrink-0 group-hover:scale-105 transition-transform"
+                />
+              ) : (
+                <div className="w-28 h-40 bg-surface-100 rounded-lg flex-shrink-0 flex items-center justify-center">
+                  {weeklyPick.type === 'movie' ? (
+                    <Icons.Clapperboard className="w-10 h-10 text-gray-600" />
+                  ) : (
+                    <Icons.Tv className="w-10 h-10 text-gray-600" />
+                  )}
+                </div>
+              )}
+
+              {/* Info */}
+              <div className="flex-1 min-w-0 flex flex-col justify-center">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-500 text-xs font-medium rounded-full">
+                    ⭐ Destacada
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {weeklyPick.type === 'movie' ? 'Película' : 'Serie'}
+                  </span>
+                </div>
+
+                <h3 className="text-xl font-bold text-white mb-1 truncate">
+                  {weeklyPick.title}
+                </h3>
+
+                {weeklyPick.genre && (
+                  <span className="text-sm text-brand mb-2">{weeklyPick.genre}</span>
+                )}
+
+                {weeklyPick.comment && (
+                  <p className="text-gray-400 text-sm line-clamp-2 mb-3">
+                    "{weeklyPick.comment}"
+                  </p>
+                )}
+
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5">
+                    <UserAvatar
+                      avatar={weeklyPick.profiles?.avatar}
+                      color={weeklyPick.profiles?.avatar_color}
+                      username={weeklyPick.profiles?.username}
+                      size="sm"
+                    />
+                    <span className="text-sm text-gray-400">
+                      {weeklyPick.profiles?.username || 'Usuario'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 text-gray-500">
+                    {likesMap[weeklyPick.id]?.liked ? (
+                      <Icons.HeartFilled className="w-4 h-4 text-red-500" />
+                    ) : (
+                      <Icons.Heart className="w-4 h-4" />
+                    )}
+                    <span className="text-sm">{likesMap[weeklyPick.id]?.count || 0}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Filtros */}
       <div className="mb-6 space-y-3">
