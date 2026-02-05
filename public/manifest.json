@@ -4,9 +4,10 @@
   "description": "Comparte y descubre películas y series con tus amigos",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#1f2937",
-  "theme_color": "#ef4444",
+  "background_color": "#0D0D0D",
+  "theme_color": "#3ECF8E",
   "orientation": "portrait-primary",
+  "categories": ["entertainment", "social"],
   "icons": [
     {
       "src": "/icon-192.png",
