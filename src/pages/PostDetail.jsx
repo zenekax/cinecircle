@@ -45,17 +45,26 @@ export default function PostDetail() {
 
   const loadPost = async () => {
     try {
-      const { data, error } = await supabase
+      // Obtener la recomendación
+      const { data: postData, error: postError } = await supabase
         .from('recommendations')
-        .select(`
-          *,
-          profiles (username, avatar, avatar_color)
-        `)
+        .select('*')
         .eq('id', postId)
         .single()
 
-      if (error) throw error
-      setPost(data)
+      if (postError) throw postError
+
+      // Obtener el perfil del usuario
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('username, avatar, avatar_color')
+        .eq('id', postData.user_id)
+        .single()
+
+      setPost({
+        ...postData,
+        profiles: profileData || null
+      })
     } catch (error) {
       console.error('Error:', error.message)
     } finally {
@@ -65,17 +74,43 @@ export default function PostDetail() {
 
   const loadComments = async () => {
     try {
-      const { data, error } = await supabase
+      console.log('Loading comments for postId:', postId)
+
+      // Primero obtener los comentarios
+      const { data: commentsData, error: commentsError } = await supabase
         .from('comments')
-        .select(`
-          *,
-          profiles (username, avatar, avatar_color)
-        `)
+        .select('*')
         .eq('recommendation_id', postId)
         .order('created_at', { ascending: true })
 
-      if (error) throw error
-      setComments(data || [])
+      console.log('Comments result:', commentsData, 'Error:', commentsError)
+
+      if (commentsError) throw commentsError
+
+      if (!commentsData || commentsData.length === 0) {
+        setComments([])
+        return
+      }
+
+      // Obtener los perfiles de los usuarios que comentaron
+      const userIds = [...new Set(commentsData.map(c => c.user_id))]
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, username, avatar, avatar_color')
+        .in('id', userIds)
+
+      // Combinar comentarios con perfiles
+      const profilesMap = {}
+      profilesData?.forEach(p => {
+        profilesMap[p.id] = p
+      })
+
+      const commentsWithProfiles = commentsData.map(comment => ({
+        ...comment,
+        profiles: profilesMap[comment.user_id] || null
+      }))
+
+      setComments(commentsWithProfiles)
     } catch (error) {
       console.error('Error:', error.message)
     }
