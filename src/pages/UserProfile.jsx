@@ -4,6 +4,7 @@ import { supabase } from '../services/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { Icons } from '../components/Icons'
 import UserAvatar from '../components/UserAvatar'
+import { BadgeList, calculateBadges } from '../components/Badges'
 
 export default function UserProfile() {
   const { userId } = useParams()
@@ -12,7 +13,8 @@ export default function UserProfile() {
 
   const [profile, setProfile] = useState(null)
   const [recommendations, setRecommendations] = useState([])
-  const [stats, setStats] = useState({ recommendations: 0, friends: 0 })
+  const [stats, setStats] = useState({ recommendations: 0, friends: 0, likesReceived: 0 })
+  const [badges, setBadges] = useState([])
   const [loading, setLoading] = useState(true)
   const [friendshipStatus, setFriendshipStatus] = useState(null) // null, 'friends', 'pending_sent', 'pending_received'
 
@@ -64,21 +66,55 @@ export default function UserProfile() {
 
   const loadStats = async () => {
     try {
-      const { count: recCount } = await supabase
+      // Contar recomendaciones
+      const { data: recs, count: recCount } = await supabase
         .from('recommendations')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact' })
         .eq('user_id', userId)
 
+      // Contar amigos
       const { count: friendCount } = await supabase
         .from('friendships')
         .select('*', { count: 'exact', head: true })
         .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`)
         .eq('status', 'accepted')
 
+      // Contar likes recibidos
+      let likesReceived = 0
+      if (recs && recs.length > 0) {
+        const recIds = recs.map(r => r.id)
+        const { count: likesCount } = await supabase
+          .from('likes')
+          .select('*', { count: 'exact', head: true })
+          .in('recommendation_id', recIds)
+        likesReceived = likesCount || 0
+      }
+
+      // Contar watchlist
+      const { data: watchlist } = await supabase
+        .from('watchlist')
+        .select('watched')
+        .eq('user_id', userId)
+
+      const watchlistCount = watchlist?.length || 0
+      const watchedCount = watchlist?.filter(w => w.watched).length || 0
+
       setStats({
         recommendations: recCount || 0,
-        friends: friendCount || 0
+        friends: friendCount || 0,
+        likesReceived
       })
+
+      // Calcular insignias
+      const userBadges = calculateBadges({
+        totalRecommendations: recCount || 0,
+        totalLikesReceived: likesReceived,
+        totalFriends: friendCount || 0,
+        watchlistCount,
+        watchedCount,
+        createdAt: profile?.created_at
+      })
+      setBadges(userBadges)
     } catch (error) {
       console.error('Error cargando stats:', error.message)
     }
@@ -233,8 +269,19 @@ export default function UserProfile() {
         </div>
       </div>
 
+      {/* Insignias */}
+      {badges.length > 0 && (
+        <div className="card mb-6">
+          <h3 className="text-sm font-medium text-gray-400 mb-3 flex items-center gap-2">
+            <Icons.Award className="w-4 h-4 text-yellow-500" />
+            Insignias
+          </h3>
+          <BadgeList badges={badges} maxDisplay={6} size="sm" />
+        </div>
+      )}
+
       {/* Stats */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="card text-center py-4">
           <p className="text-3xl font-bold text-brand">{stats.recommendations}</p>
           <p className="text-sm text-gray-400 mt-1">Recomendaciones</p>
@@ -242,6 +289,10 @@ export default function UserProfile() {
         <div className="card text-center py-4">
           <p className="text-3xl font-bold text-blue-500">{stats.friends}</p>
           <p className="text-sm text-gray-400 mt-1">Amigos</p>
+        </div>
+        <div className="card text-center py-4">
+          <p className="text-3xl font-bold text-red-500">{stats.likesReceived}</p>
+          <p className="text-sm text-gray-400 mt-1">Likes</p>
         </div>
       </div>
 
@@ -279,10 +330,25 @@ export default function UserProfile() {
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <h4 className="font-semibold text-white">{rec.title}</h4>
-                      <p className="text-sm text-gray-500">
-                        {rec.type === 'movie' ? 'Película' : 'Serie'}
-                        {rec.genre && ` • ${rec.genre}`}
-                      </p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm text-gray-500">
+                          {rec.type === 'movie' ? 'Película' : 'Serie'}
+                        </span>
+                        {rec.genre && (
+                          <>
+                            <span className="text-gray-600">•</span>
+                            <span className="text-sm text-gray-500">{rec.genre}</span>
+                          </>
+                        )}
+                        {rec.platform && (
+                          <>
+                            <span className="text-gray-600">•</span>
+                            <span className="text-xs px-2 py-0.5 bg-brand/20 text-brand rounded-full">
+                              {rec.platform}
+                            </span>
+                          </>
+                        )}
+                      </div>
                     </div>
                     <div className="text-right flex-shrink-0">
                       <StarRating rating={rec.rating} />

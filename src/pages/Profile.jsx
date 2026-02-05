@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth'
 import { Icons } from '../components/Icons'
 import AvatarSelector from '../components/AvatarSelector'
 import UserAvatar from '../components/UserAvatar'
+import { BadgeList, BadgeProgress, calculateBadges } from '../components/Badges'
 
 export default function Profile() {
   const { user } = useAuth()
@@ -25,6 +26,7 @@ export default function Profile() {
     watchlistWatched: 0,
   })
   const [recentActivity, setRecentActivity] = useState([])
+  const [badges, setBadges] = useState([])
 
   useEffect(() => {
     if (user) {
@@ -113,7 +115,7 @@ export default function Profile() {
 
       const watchlist = watchlistResponse.data || []
 
-      setStats({
+      const newStats = {
         totalRecommendations: recs.length,
         completedGoals,
         totalGoals,
@@ -125,7 +127,20 @@ export default function Profile() {
         topGenres,
         watchlistPending: watchlist.filter(w => !w.watched).length,
         watchlistWatched: watchlist.filter(w => w.watched).length,
+      }
+
+      setStats(newStats)
+
+      // Calcular insignias
+      const userBadges = calculateBadges({
+        totalRecommendations: recs.length,
+        totalLikesReceived: likesReceived,
+        totalFriends: friendsResponse.count || 0,
+        watchlistCount: watchlist.length,
+        watchedCount: watchlist.filter(w => w.watched).length,
+        createdAt: user?.created_at
       })
+      setBadges(userBadges)
 
       // Cargar actividad reciente
       const { data: activity } = await supabase
@@ -215,6 +230,36 @@ export default function Profile() {
               Cambiar avatar
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* Insignias */}
+      <div className="card mb-8">
+        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+          <Icons.Award className="w-5 h-5 text-yellow-500" />
+          Mis Insignias
+          {badges.length > 0 && (
+            <span className="text-sm font-normal text-gray-400">({badges.length})</span>
+          )}
+        </h3>
+
+        {badges.length > 0 ? (
+          <div className="mb-6">
+            <BadgeList badges={badges} maxDisplay={10} size="md" />
+          </div>
+        ) : (
+          <p className="text-gray-500 text-sm mb-6">
+            ¡Empezá a recomendar películas para desbloquear insignias!
+          </p>
+        )}
+
+        <div className="border-t border-border pt-4">
+          <h4 className="text-sm font-medium text-gray-400 mb-3">Próximas insignias</h4>
+          <BadgeProgress stats={{
+            totalRecommendations: stats.totalRecommendations,
+            totalLikesReceived: stats.likesReceived,
+            totalFriends: stats.friends
+          }} />
         </div>
       </div>
 
