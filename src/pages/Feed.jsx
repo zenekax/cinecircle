@@ -5,20 +5,6 @@ import { useAuth } from '../hooks/useAuth'
 import { Icons } from '../components/Icons'
 import UserAvatar from '../components/UserAvatar'
 
-// Géneros disponibles para filtrar
-const GENRES = [
-  { id: 'all', label: 'Todos', icon: 'Grid' },
-  { id: 'Acción', label: 'Acción', icon: 'Zap' },
-  { id: 'Comedia', label: 'Comedia', icon: 'Smile' },
-  { id: 'Drama', label: 'Drama', icon: 'Heart' },
-  { id: 'Terror', label: 'Terror', icon: 'Ghost' },
-  { id: 'Suspenso', label: 'Suspenso', icon: 'Eye' },
-  { id: 'Ciencia Ficción', label: 'Sci-Fi', icon: 'Rocket' },
-  { id: 'Romance', label: 'Romance', icon: 'HeartFilled' },
-  { id: 'Animación', label: 'Animación', icon: 'Sparkles' },
-  { id: 'Documental', label: 'Documental', icon: 'FileText' },
-]
-
 export default function Feed() {
   const [recommendations, setRecommendations] = useState([])
   const [filteredRecs, setFilteredRecs] = useState([])
@@ -27,6 +13,7 @@ export default function Feed() {
   const [commentsMap, setCommentsMap] = useState({}) // { recId: count }
   const [selectedGenre, setSelectedGenre] = useState('all')
   const [selectedType, setSelectedType] = useState('all') // 'all', 'movie', 'tv'
+  const [availableGenres, setAvailableGenres] = useState([]) // Géneros extraídos de las recomendaciones
   const { user } = useAuth()
   const navigate = useNavigate()
 
@@ -54,15 +41,24 @@ export default function Feed() {
     }
   }, [])
 
+  // Extraer géneros únicos de las recomendaciones
+  useEffect(() => {
+    const genres = recommendations
+      .map(rec => rec.genre)
+      .filter(Boolean) // Eliminar nulls/undefined
+      .filter((genre, index, self) => self.indexOf(genre) === index) // Únicos
+      .sort()
+
+    setAvailableGenres(genres)
+  }, [recommendations])
+
   // Filtrar recomendaciones cuando cambian los filtros
   useEffect(() => {
     let filtered = [...recommendations]
 
     // Filtrar por género
     if (selectedGenre !== 'all') {
-      filtered = filtered.filter(rec =>
-        rec.genre?.toLowerCase().includes(selectedGenre.toLowerCase())
-      )
+      filtered = filtered.filter(rec => rec.genre === selectedGenre)
     }
 
     // Filtrar por tipo (película/serie)
@@ -242,9 +238,9 @@ export default function Feed() {
             Películas
           </button>
           <button
-            onClick={() => setSelectedType('tv')}
+            onClick={() => setSelectedType('series')}
             className={`px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-1.5 ${
-              selectedType === 'tv'
+              selectedType === 'series'
                 ? 'bg-brand text-white'
                 : 'bg-surface-100 text-gray-400 hover:bg-surface-200'
             }`}
@@ -254,22 +250,34 @@ export default function Feed() {
           </button>
         </div>
 
-        {/* Filtro por género - scroll horizontal */}
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-          {GENRES.map((genre) => (
+        {/* Filtro por género - scroll horizontal (géneros dinámicos de TMDB) */}
+        {availableGenres.length > 0 && (
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
             <button
-              key={genre.id}
-              onClick={() => setSelectedGenre(genre.id)}
+              onClick={() => setSelectedGenre('all')}
               className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-                selectedGenre === genre.id
+                selectedGenre === 'all'
                   ? 'bg-brand/20 text-brand border border-brand'
                   : 'bg-surface-100 text-gray-400 hover:bg-surface-200 border border-transparent'
               }`}
             >
-              {genre.label}
+              Todos
             </button>
-          ))}
-        </div>
+            {availableGenres.map((genre) => (
+              <button
+                key={genre}
+                onClick={() => setSelectedGenre(genre)}
+                className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                  selectedGenre === genre
+                    ? 'bg-brand/20 text-brand border border-brand'
+                    : 'bg-surface-100 text-gray-400 hover:bg-surface-200 border border-transparent'
+                }`}
+              >
+                {genre}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Contador de resultados */}
         {(selectedGenre !== 'all' || selectedType !== 'all') && (
@@ -277,7 +285,7 @@ export default function Feed() {
             <p className="text-sm text-gray-500">
               {filteredRecs.length} {filteredRecs.length === 1 ? 'resultado' : 'resultados'}
               {selectedGenre !== 'all' && ` en ${selectedGenre}`}
-              {selectedType !== 'all' && ` (${selectedType === 'movie' ? 'películas' : 'series'})`}
+              {selectedType !== 'all' && ` • ${selectedType === 'movie' ? 'Películas' : 'Series'}`}
             </p>
             <button
               onClick={() => {
