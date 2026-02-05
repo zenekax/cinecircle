@@ -28,6 +28,7 @@ function AppContent() {
         <Route path="/" element={<Navigate to="/feed" replace />} />
         <Route path="/feed" element={<Feed />} />
         <Route path="/recommendations" element={<Recommendations />} />
+        <Route path="/nuevo" element={<Recommendations />} />
         <Route path="/goals" element={<Goals />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/user/:userId" element={<UserProfile />} />
