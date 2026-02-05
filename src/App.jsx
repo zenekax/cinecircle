@@ -14,6 +14,9 @@ import Watchlist from './pages/Watchlist'
 import Rankings from './pages/Rankings'
 import Search from './pages/Search'
 import Notifications from './pages/Notifications'
+import Terms from './pages/Terms'
+import Privacy from './pages/Privacy'
+import Contact from './pages/Contact'
 import Footer from './components/Footer'
 import './index.css'
 
@@ -42,6 +45,9 @@ function AppContent() {
           <Route path="/rankings" element={<Rankings />} />
           <Route path="/search" element={<Search />} />
           <Route path="/notifications" element={<Notifications />} />
+          <Route path="/terminos" element={<Terms />} />
+          <Route path="/privacidad" element={<Privacy />} />
+          <Route path="/contacto" element={<Contact />} />
         </Routes>
       </main>
       {!hideNavbar && <Footer />}

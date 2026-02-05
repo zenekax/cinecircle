@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom'
+
 // Footer con atribución de TMDB y links legales
 export default function Footer() {
   return (
@@ -35,11 +37,11 @@ export default function Footer() {
 
         {/* Links */}
         <div className="flex flex-wrap justify-center gap-4 text-sm text-gray-500 mb-6">
-          <a href="#" className="hover:text-brand transition-colors">Términos de uso</a>
+          <Link to="/terminos" className="hover:text-brand transition-colors">Términos de uso</Link>
           <span className="text-gray-700">•</span>
-          <a href="#" className="hover:text-brand transition-colors">Política de privacidad</a>
+          <Link to="/privacidad" className="hover:text-brand transition-colors">Política de privacidad</Link>
           <span className="text-gray-700">•</span>
-          <a href="#" className="hover:text-brand transition-colors">Contacto</a>
+          <Link to="/contacto" className="hover:text-brand transition-colors">Contacto</Link>
           <span className="text-gray-700">•</span>
           <a
             href="https://www.themoviedb.org/terms-of-use"
