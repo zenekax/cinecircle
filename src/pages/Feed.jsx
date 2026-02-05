@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { Icons } from '../components/Icons'
@@ -8,6 +9,7 @@ export default function Feed() {
   const [recommendations, setRecommendations] = useState([])
   const [loading, setLoading] = useState(true)
   const { user } = useAuth()
+  const navigate = useNavigate()
 
   useEffect(() => {
     loadRecommendations()
@@ -177,18 +179,21 @@ export default function Feed() {
                     </p>
                   )}
 
-                  {/* User */}
-                  <div className="flex items-center gap-2">
+                  {/* User - Clickeable */}
+                  <button
+                    onClick={() => navigate(`/user/${rec.user_id}`)}
+                    className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                  >
                     <UserAvatar
                       avatar={rec.profiles?.avatar}
                       color={rec.profiles?.avatar_color}
                       username={rec.profiles?.username}
                       size="sm"
                     />
-                    <span className="text-sm text-gray-500">
+                    <span className="text-sm text-gray-500 hover:text-brand transition-colors">
                       {rec.profiles?.username || 'Usuario'}
                     </span>
-                  </div>
+                  </button>
                 </div>
               </div>
             </div>
