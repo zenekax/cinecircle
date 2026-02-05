@@ -17,12 +17,14 @@ export default function PostDetail() {
   const [sending, setSending] = useState(false)
   const [liked, setLiked] = useState(false)
   const [likesCount, setLikesCount] = useState(0)
+  const [inWatchlist, setInWatchlist] = useState(false)
 
   useEffect(() => {
     if (postId) {
       loadPost()
       loadComments()
       loadLikes()
+      checkWatchlist()
     }
   }, [postId])
 
@@ -126,6 +128,53 @@ export default function PostDetail() {
       setLikesCount(count || 0)
       setLiked(data?.some(l => l.user_id === user?.id) || false)
     } catch (error) {
+      console.error('Error:', error.message)
+    }
+  }
+
+  const checkWatchlist = async () => {
+    try {
+      const { data } = await supabase
+        .from('watchlist')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('recommendation_id', postId)
+        .single()
+
+      setInWatchlist(!!data)
+    } catch {
+      setInWatchlist(false)
+    }
+  }
+
+  const toggleWatchlist = async () => {
+    if (!post) return
+
+    // Optimistic update
+    setInWatchlist(!inWatchlist)
+
+    try {
+      if (inWatchlist) {
+        await supabase
+          .from('watchlist')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('recommendation_id', postId)
+      } else {
+        await supabase
+          .from('watchlist')
+          .insert([{
+            user_id: user.id,
+            recommendation_id: postId,
+            tmdb_id: post.tmdb_id,
+            title: post.title,
+            type: post.type,
+            poster_url: post.poster_url
+          }])
+      }
+    } catch (error) {
+      // Revert
+      setInWatchlist(inWatchlist)
       console.error('Error:', error.message)
     }
   }
@@ -326,6 +375,25 @@ export default function PostDetail() {
                 <Icons.MessageSquare className="w-5 h-5" />
                 <span>{comments.length} Comentarios</span>
               </div>
+
+              <button
+                onClick={toggleWatchlist}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ml-auto ${
+                  inWatchlist
+                    ? 'text-brand bg-brand/10'
+                    : 'text-gray-500 hover:text-brand hover:bg-brand/10'
+                }`}
+                title={inWatchlist ? 'Quitar de mi lista' : 'Agregar a mi lista'}
+              >
+                {inWatchlist ? (
+                  <Icons.BookmarkFilled className="w-5 h-5" />
+                ) : (
+                  <Icons.Bookmark className="w-5 h-5" />
+                )}
+                <span className="font-medium hidden sm:inline">
+                  {inWatchlist ? 'En mi lista' : 'Quiero ver'}
+                </span>
+              </button>
             </div>
           </div>
         </div>

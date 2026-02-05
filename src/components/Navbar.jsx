@@ -63,7 +63,7 @@ export default function Navbar() {
     { path: '/recommendations', label: 'Nuevo', icon: Icons.PlusCircle, shortLabel: 'Nuevo' },
     { path: '/friends', label: 'Amigos', icon: Icons.Users, shortLabel: 'Amigos', badge: pendingFriends },
     { path: '/messages', label: 'Chat', icon: Icons.MessageCircle, shortLabel: 'Chat', badge: unreadCount },
-    { path: '/goals', label: 'Metas', icon: Icons.Target, shortLabel: 'Metas' },
+    { path: '/watchlist', label: 'Mi Lista', icon: Icons.Bookmark, shortLabel: 'Lista' },
     { path: '/profile', label: 'Perfil', icon: Icons.User, shortLabel: 'Perfil' },
   ]
 
