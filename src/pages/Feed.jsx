@@ -505,6 +505,14 @@ export default function Feed() {
                             <span className="text-sm text-gray-500">{rec.genre}</span>
                           </>
                         )}
+                        {rec.platform && (
+                          <>
+                            <span className="text-gray-600">•</span>
+                            <span className="text-xs px-2 py-0.5 bg-brand/20 text-brand rounded-full">
+                              {rec.platform}
+                            </span>
+                          </>
+                        )}
                       </div>
                     </div>
                     <div className="text-right flex-shrink-0">

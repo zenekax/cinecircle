@@ -309,7 +309,7 @@ export default function PostDetail() {
           {/* Content */}
           <div className="flex-1">
             <h1 className="text-2xl font-bold text-white">{post.title}</h1>
-            <div className="flex items-center gap-2 mt-2">
+            <div className="flex items-center gap-2 mt-2 flex-wrap">
               <span className="text-sm text-gray-500">
                 {post.type === 'movie' ? 'Película' : 'Serie'}
               </span>
@@ -317,6 +317,14 @@ export default function PostDetail() {
                 <>
                   <span className="text-gray-600">•</span>
                   <span className="text-sm text-gray-500">{post.genre}</span>
+                </>
+              )}
+              {post.platform && (
+                <>
+                  <span className="text-gray-600">•</span>
+                  <span className="text-sm px-3 py-1 bg-brand/20 text-brand rounded-full font-medium">
+                    📺 {post.platform}
+                  </span>
                 </>
               )}
             </div>

@@ -1,9 +1,25 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../hooks/useAuth'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { searchMedia, getMediaDetails, isTMDBConfigured } from '../services/tmdb'
 import { sanitizeImageUrl } from '../utils/validation'
+
+// Plataformas de streaming disponibles
+const PLATFORMS = [
+  { id: 'netflix', name: 'Netflix', color: 'bg-red-600' },
+  { id: 'prime', name: 'Prime Video', color: 'bg-blue-500' },
+  { id: 'disney', name: 'Disney+', color: 'bg-blue-700' },
+  { id: 'hbo', name: 'Max', color: 'bg-purple-600' },
+  { id: 'apple', name: 'Apple TV+', color: 'bg-gray-600' },
+  { id: 'paramount', name: 'Paramount+', color: 'bg-blue-600' },
+  { id: 'star', name: 'Star+', color: 'bg-red-800' },
+  { id: 'crunchyroll', name: 'Crunchyroll', color: 'bg-orange-500' },
+  { id: 'mubi', name: 'MUBI', color: 'bg-indigo-600' },
+  { id: 'flow', name: 'Flow', color: 'bg-green-600' },
+  { id: 'cine', name: 'Cine', color: 'bg-yellow-600' },
+  { id: 'otro', name: 'Otro', color: 'bg-gray-500' },
+]
 
 export default function Recommendations() {
   const [title, setTitle] = useState('')
@@ -13,11 +29,13 @@ export default function Recommendations() {
   const [posterUrl, setPosterUrl] = useState('')
   const [overview, setOverview] = useState('')
   const [genre, setGenre] = useState('')
+  const [platform, setPlatform] = useState('')
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [posterError, setPosterError] = useState(false)
   const { user } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
 
   // Estados para búsqueda TMDB
   const [searchQuery, setSearchQuery] = useState('')
@@ -26,6 +44,43 @@ export default function Recommendations() {
   const [showResults, setShowResults] = useState(false)
   const [selectedMedia, setSelectedMedia] = useState(null)
   const tmdbEnabled = isTMDBConfigured()
+
+  // Cargar datos de TMDB si vienen por URL
+  useEffect(() => {
+    const tmdbId = searchParams.get('tmdb_id')
+    const mediaType = searchParams.get('type')
+
+    if (tmdbId && mediaType && tmdbEnabled) {
+      loadFromTMDB(parseInt(tmdbId), mediaType)
+    }
+  }, [searchParams, tmdbEnabled])
+
+  const loadFromTMDB = async (tmdbId, mediaType) => {
+    setLoading(true)
+    try {
+      const details = await getMediaDetails(tmdbId, mediaType)
+      if (details) {
+        setSelectedMedia({
+          id: details.id,
+          title: details.title,
+          posterUrl: details.posterUrl,
+          year: details.year,
+          type: mediaType
+        })
+        setTitle(details.title)
+        setPosterUrl(details.posterUrl || '')
+        setOverview(details.overview || '')
+        setType(mediaType)
+        if (details.genres?.length > 0) {
+          setGenre(details.genres[0])
+        }
+      }
+    } catch (error) {
+      console.error('Error loading from TMDB:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // Debounce para búsqueda
   useEffect(() => {
@@ -92,6 +147,7 @@ export default function Recommendations() {
             tmdb_id: selectedMedia?.id || null,
             overview: overview || null,
             genre: genre || null,
+            platform: platform || null,
           }
         ])
 
@@ -261,6 +317,34 @@ export default function Recommendations() {
               />
             </div>
           )}
+
+          {/* Plataforma */}
+          <div>
+            <label className="block text-sm font-medium text-gray-400 mb-2">
+              ¿Dónde la viste? <span className="text-gray-600">(opcional)</span>
+            </label>
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+              {PLATFORMS.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setPlatform(platform === p.name ? '' : p.name)}
+                  className={`py-2 px-3 rounded-lg text-sm font-medium transition-all duration-200 border ${
+                    platform === p.name
+                      ? `${p.color} text-white border-transparent`
+                      : 'bg-surface-200 text-gray-400 border-border hover:border-gray-600'
+                  }`}
+                >
+                  {p.name}
+                </button>
+              ))}
+            </div>
+            {platform && (
+              <p className="text-sm text-brand mt-2">
+                📺 Vista en {platform}
+              </p>
+            )}
+          </div>
 
           {/* Rating */}
           <div>

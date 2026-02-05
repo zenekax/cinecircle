@@ -4,15 +4,20 @@ import { supabase } from '../services/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { Icons } from '../components/Icons'
 import UserAvatar from '../components/UserAvatar'
+import { searchMedia, isTMDBConfigured } from '../services/tmdb'
 
 export default function Search() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [query, setQuery] = useState(searchParams.get('q') || '')
-  const [activeTab, setActiveTab] = useState('all') // 'all', 'content', 'users'
+  const [activeTab, setActiveTab] = useState('all') // 'all', 'tmdb', 'recommendations', 'users'
   const [loading, setLoading] = useState(false)
-  const [results, setResults] = useState({ content: [], users: [] })
+  const [results, setResults] = useState({ tmdb: [], recommendations: [], users: [] })
   const { user } = useAuth()
   const navigate = useNavigate()
+  const tmdbEnabled = isTMDBConfigured()
+
+  // Debug - mostrar si TMDB está habilitado
+  console.log('TMDB Enabled:', tmdbEnabled)
 
   useEffect(() => {
     const q = searchParams.get('q')
@@ -24,7 +29,7 @@ export default function Search() {
 
   const performSearch = async (searchQuery) => {
     if (!searchQuery || searchQuery.trim().length < 2) {
-      setResults({ content: [], users: [] })
+      setResults({ tmdb: [], recommendations: [], users: [] })
       return
     }
 
@@ -32,8 +37,22 @@ export default function Search() {
     try {
       const searchTerm = searchQuery.trim().toLowerCase()
 
-      // Buscar contenido (recomendaciones)
-      const { data: contentData } = await supabase
+      // Buscar en TMDB (películas y series)
+      let tmdbResults = []
+      if (tmdbEnabled) {
+        console.log('Buscando en TMDB:', searchTerm)
+        const [movies, series] = await Promise.all([
+          searchMedia(searchTerm, 'movie'),
+          searchMedia(searchTerm, 'series')
+        ])
+        console.log('Resultados TMDB:', { movies: movies.length, series: series.length })
+        tmdbResults = [...movies, ...series].slice(0, 20)
+      } else {
+        console.log('TMDB no está habilitado')
+      }
+
+      // Buscar recomendaciones existentes en la app
+      const { data: recommendationsData } = await supabase
         .from('recommendations')
         .select(`
           id,
@@ -42,6 +61,7 @@ export default function Search() {
           poster_url,
           genre,
           rating,
+          platform,
           user_id,
           created_at,
           profiles (username, avatar, avatar_color)
@@ -59,7 +79,8 @@ export default function Search() {
         .limit(10)
 
       setResults({
-        content: contentData || [],
+        tmdb: tmdbResults,
+        recommendations: recommendationsData || [],
         users: usersData || []
       })
     } catch (error) {
@@ -86,17 +107,29 @@ export default function Search() {
       if (query.trim().length >= 2) {
         performSearch(query)
       } else {
-        setResults({ content: [], users: [] })
+        setResults({ tmdb: [], recommendations: [], users: [] })
       }
     }, 300)
 
     return () => clearTimeout(timer)
   }, [query])
 
-  const totalResults = results.content.length + results.users.length
+  const totalResults = results.tmdb.length + results.recommendations.length + results.users.length
 
-  const filteredContent = activeTab === 'users' ? [] : results.content
-  const filteredUsers = activeTab === 'content' ? [] : results.users
+  const getFilteredResults = () => {
+    switch (activeTab) {
+      case 'tmdb':
+        return { tmdb: results.tmdb, recommendations: [], users: [] }
+      case 'recommendations':
+        return { tmdb: [], recommendations: results.recommendations, users: [] }
+      case 'users':
+        return { tmdb: [], recommendations: [], users: results.users }
+      default:
+        return results
+    }
+  }
+
+  const filtered = getFilteredResults()
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 pb-24 lg:pb-8">
@@ -106,7 +139,7 @@ export default function Search() {
           <Icons.Search className="w-7 h-7 text-brand" />
           Buscar
         </h1>
-        <p className="text-gray-500 mt-1">Encontrá películas, series y usuarios</p>
+        <p className="text-gray-500 mt-1">Explorá todo el catálogo de películas y series</p>
       </div>
 
       {/* Search Input */}
@@ -126,7 +159,7 @@ export default function Search() {
               type="button"
               onClick={() => {
                 setQuery('')
-                setResults({ content: [], users: [] })
+                setResults({ tmdb: [], recommendations: [], users: [] })
               }}
               className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
             >
@@ -138,10 +171,10 @@ export default function Search() {
 
       {/* Tabs */}
       {query.trim().length >= 2 && (
-        <div className="flex gap-2 mb-6">
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
           <button
             onClick={() => setActiveTab('all')}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
               activeTab === 'all'
                 ? 'bg-brand text-white'
                 : 'bg-surface-100 text-gray-400 hover:bg-surface-200'
@@ -149,25 +182,37 @@ export default function Search() {
           >
             Todo ({totalResults})
           </button>
+          {tmdbEnabled && (
+            <button
+              onClick={() => setActiveTab('tmdb')}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
+                activeTab === 'tmdb'
+                  ? 'bg-brand text-white'
+                  : 'bg-surface-100 text-gray-400 hover:bg-surface-200'
+              }`}
+            >
+              🎬 Catálogo ({results.tmdb.length})
+            </button>
+          )}
           <button
-            onClick={() => setActiveTab('content')}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-              activeTab === 'content'
+            onClick={() => setActiveTab('recommendations')}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
+              activeTab === 'recommendations'
                 ? 'bg-brand text-white'
                 : 'bg-surface-100 text-gray-400 hover:bg-surface-200'
             }`}
           >
-            Contenido ({results.content.length})
+            ⭐ Recomendados ({results.recommendations.length})
           </button>
           <button
             onClick={() => setActiveTab('users')}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
               activeTab === 'users'
                 ? 'bg-brand text-white'
                 : 'bg-surface-100 text-gray-400 hover:bg-surface-200'
             }`}
           >
-            Usuarios ({results.users.length})
+            👤 Usuarios ({results.users.length})
           </button>
         </div>
       )}
@@ -181,16 +226,87 @@ export default function Search() {
 
       {/* Results */}
       {!loading && query.trim().length >= 2 && (
-        <div className="space-y-6">
+        <div className="space-y-8">
+          {/* TMDB Results */}
+          {filtered.tmdb.length > 0 && (
+            <div>
+              <h3 className="text-sm font-medium text-gray-400 mb-3 flex items-center gap-2">
+                <Icons.Film className="w-4 h-4" />
+                Catálogo TMDB
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                {filtered.tmdb.map((item) => (
+                  <div
+                    key={`tmdb-${item.id}-${item.type}`}
+                    className="card p-3 hover:bg-surface-200 transition-colors cursor-pointer group"
+                    onClick={() => navigate(`/nuevo?tmdb_id=${item.id}&type=${item.type}`)}
+                  >
+                    {/* Poster */}
+                    {item.posterUrl ? (
+                      <img
+                        src={item.posterUrl}
+                        alt={item.title}
+                        className="w-full aspect-[2/3] object-cover rounded-lg mb-3"
+                      />
+                    ) : (
+                      <div className="w-full aspect-[2/3] bg-surface-100 rounded-lg mb-3 flex items-center justify-center">
+                        {item.type === 'movie' ? (
+                          <Icons.Clapperboard className="w-8 h-8 text-gray-600" />
+                        ) : (
+                          <Icons.Tv className="w-8 h-8 text-gray-600" />
+                        )}
+                      </div>
+                    )}
+
+                    {/* Info */}
+                    <h4 className="font-medium text-white text-sm truncate group-hover:text-brand transition-colors">
+                      {item.title}
+                    </h4>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-xs text-gray-500">
+                        {item.type === 'movie' ? 'Película' : 'Serie'}
+                      </span>
+                      {item.year && (
+                        <>
+                          <span className="text-gray-600">•</span>
+                          <span className="text-xs text-gray-500">{item.year}</span>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Rating de TMDB */}
+                    {item.rating && (
+                      <div className="flex items-center gap-1 mt-2">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Icons.StarFilled
+                            key={star}
+                            className={`w-3 h-3 ${star <= item.rating ? 'text-yellow-500' : 'text-gray-700'}`}
+                          />
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Call to action */}
+                    <div className="mt-3 pt-3 border-t border-border">
+                      <span className="text-xs text-brand font-medium">
+                        + Recomendar
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Users */}
-          {filteredUsers.length > 0 && (
+          {filtered.users.length > 0 && (
             <div>
               <h3 className="text-sm font-medium text-gray-400 mb-3 flex items-center gap-2">
                 <Icons.Users className="w-4 h-4" />
                 Usuarios
               </h3>
               <div className="grid gap-2">
-                {filteredUsers.map((u) => (
+                {filtered.users.map((u) => (
                   <button
                     key={u.id}
                     onClick={() => navigate(`/user/${u.id}`)}
@@ -212,15 +328,15 @@ export default function Search() {
             </div>
           )}
 
-          {/* Content */}
-          {filteredContent.length > 0 && (
+          {/* Recommendations from CineCircle */}
+          {filtered.recommendations.length > 0 && (
             <div>
               <h3 className="text-sm font-medium text-gray-400 mb-3 flex items-center gap-2">
-                <Icons.Film className="w-4 h-4" />
-                Películas y Series
+                <Icons.StarFilled className="w-4 h-4 text-brand" />
+                Recomendados por la comunidad
               </h3>
               <div className="space-y-3">
-                {filteredContent.map((item) => (
+                {filtered.recommendations.map((item) => (
                   <button
                     key={item.id}
                     onClick={() => navigate(`/post/${item.id}`)}
@@ -246,7 +362,7 @@ export default function Search() {
                     {/* Info */}
                     <div className="flex-1 min-w-0">
                       <h4 className="font-semibold text-white truncate">{item.title}</h4>
-                      <div className="flex items-center gap-2 mt-1">
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
                         <span className="text-xs text-gray-500">
                           {item.type === 'movie' ? 'Película' : 'Serie'}
                         </span>
@@ -254,6 +370,14 @@ export default function Search() {
                           <>
                             <span className="text-gray-600">•</span>
                             <span className="text-xs text-gray-500">{item.genre}</span>
+                          </>
+                        )}
+                        {item.platform && (
+                          <>
+                            <span className="text-gray-600">•</span>
+                            <span className="text-xs px-2 py-0.5 bg-brand/20 text-brand rounded-full">
+                              {item.platform}
+                            </span>
                           </>
                         )}
                       </div>
@@ -297,9 +421,14 @@ export default function Search() {
           <h3 className="text-lg font-medium text-white mb-2">
             Buscá lo que quieras
           </h3>
-          <p className="text-gray-500">
+          <p className="text-gray-500 mb-4">
             Escribí al menos 2 caracteres para buscar
           </p>
+          {tmdbEnabled && (
+            <p className="text-sm text-gray-600">
+              Podés buscar en todo el catálogo de películas y series de TMDB
+            </p>
+          )}
         </div>
       )}
     </div>
