@@ -14,6 +14,7 @@ import Watchlist from './pages/Watchlist'
 import Rankings from './pages/Rankings'
 import Search from './pages/Search'
 import Notifications from './pages/Notifications'
+import Footer from './components/Footer'
 import './index.css'
 
 function AppContent() {
@@ -22,25 +23,28 @@ function AppContent() {
   const hideNavbar = location.pathname.startsWith('/messages/') && location.pathname !== '/messages'
 
   return (
-    <div className="min-h-screen bg-dark-500">
+    <div className="min-h-screen bg-dark-500 flex flex-col">
       {!hideNavbar && <Navbar />}
-      <Routes>
-        <Route path="/" element={<Navigate to="/feed" replace />} />
-        <Route path="/feed" element={<Feed />} />
-        <Route path="/recommendations" element={<Recommendations />} />
-        <Route path="/nuevo" element={<Recommendations />} />
-        <Route path="/goals" element={<Goals />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/user/:userId" element={<UserProfile />} />
-        <Route path="/post/:postId" element={<PostDetail />} />
-        <Route path="/friends" element={<Friends />} />
-        <Route path="/messages" element={<Messages />} />
-        <Route path="/messages/:friendId" element={<Messages />} />
-        <Route path="/watchlist" element={<Watchlist />} />
-        <Route path="/rankings" element={<Rankings />} />
-        <Route path="/search" element={<Search />} />
-        <Route path="/notifications" element={<Notifications />} />
-      </Routes>
+      <main className="flex-1">
+        <Routes>
+          <Route path="/" element={<Navigate to="/feed" replace />} />
+          <Route path="/feed" element={<Feed />} />
+          <Route path="/recommendations" element={<Recommendations />} />
+          <Route path="/nuevo" element={<Recommendations />} />
+          <Route path="/goals" element={<Goals />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/user/:userId" element={<UserProfile />} />
+          <Route path="/post/:postId" element={<PostDetail />} />
+          <Route path="/friends" element={<Friends />} />
+          <Route path="/messages" element={<Messages />} />
+          <Route path="/messages/:friendId" element={<Messages />} />
+          <Route path="/watchlist" element={<Watchlist />} />
+          <Route path="/rankings" element={<Rankings />} />
+          <Route path="/search" element={<Search />} />
+          <Route path="/notifications" element={<Notifications />} />
+        </Routes>
+      </main>
+      {!hideNavbar && <Footer />}
     </div>
   )
 }
