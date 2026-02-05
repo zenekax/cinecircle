@@ -112,7 +112,8 @@ export default function UserProfile() {
         totalFriends: friendCount || 0,
         watchlistCount,
         watchedCount,
-        createdAt: profile?.created_at
+        createdAt: profile?.created_at,
+        username: profile?.username
       })
       setBadges(userBadges)
     } catch (error) {

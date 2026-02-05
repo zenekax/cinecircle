@@ -138,7 +138,8 @@ export default function Profile() {
         totalFriends: friendsResponse.count || 0,
         watchlistCount: watchlist.length,
         watchedCount: watchlist.filter(w => w.watched).length,
-        createdAt: user?.created_at
+        createdAt: user?.created_at,
+        username: profileData?.username
       })
       setBadges(userBadges)
 

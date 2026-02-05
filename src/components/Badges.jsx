@@ -154,6 +154,17 @@ export const BADGES = {
   // Insignias especiales
   special: [
     {
+      id: 'founder',
+      name: 'Fundador',
+      description: 'Creador de CineCircle',
+      icon: 'Founder',
+      color: 'text-amber-400',
+      bgColor: 'bg-gradient-to-br from-amber-400/30 to-yellow-500/30',
+      borderColor: 'border-amber-400',
+      requirement: null,
+      type: 'founder'
+    },
+    {
       id: 'early_adopter',
       name: 'Early Adopter',
       description: 'Te uniste en los primeros días',
@@ -161,7 +172,7 @@ export const BADGES = {
       color: 'text-violet-400',
       bgColor: 'bg-violet-400/20',
       borderColor: 'border-violet-400/50',
-      requirement: null, // Se da manualmente o por fecha
+      requirement: null,
       type: 'special'
     },
     {
@@ -178,8 +189,17 @@ export const BADGES = {
   ]
 }
 
+// ID del fundador (Ignacio Basso)
+const FOUNDER_USERNAME = 'nachito'
+
 // Íconos personalizados para las insignias
 const BadgeIcons = {
+  Founder: ({ className }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2L9 5H5L7 9L4 12L7 15L5 19H9L12 22L15 19H19L17 15L20 12L17 9L19 5H15L12 2Z" />
+      <circle cx="12" cy="12" r="4" fill="currentColor" opacity="0.3" />
+    </svg>
+  ),
   Seedling: ({ className }) => (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M7 20h10" />
@@ -257,6 +277,11 @@ const getBadgeIcon = (iconName, className) => {
 export function calculateBadges(stats) {
   const unlockedBadges = []
 
+  // Insignia de Fundador (siempre primero si aplica)
+  if (stats.username === FOUNDER_USERNAME) {
+    unlockedBadges.push(BADGES.special[0]) // Fundador
+  }
+
   // Verificar insignias de recomendaciones
   BADGES.recommendations.forEach(badge => {
     if (stats.totalRecommendations >= badge.requirement) {
@@ -291,7 +316,7 @@ export function calculateBadges(stats) {
   // Early adopter (si se registró antes de cierta fecha)
   const earlyAdopterDate = new Date('2025-03-01') // Ajustar según necesites
   if (stats.createdAt && new Date(stats.createdAt) < earlyAdopterDate) {
-    unlockedBadges.push(BADGES.special[0])
+    unlockedBadges.push(BADGES.special[1]) // Early Adopter (índice 1 ahora)
   }
 
   return unlockedBadges
