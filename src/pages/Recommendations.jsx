@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useNavigate } from 'react-router-dom'
-import { searchMedia, isTMDBConfigured } from '../services/tmdb'
+import { searchMedia, getMediaDetails, isTMDBConfigured } from '../services/tmdb'
 import { sanitizeImageUrl } from '../utils/validation'
 
 export default function Recommendations() {
@@ -11,6 +11,8 @@ export default function Recommendations() {
   const [rating, setRating] = useState(5)
   const [comment, setComment] = useState('')
   const [posterUrl, setPosterUrl] = useState('')
+  const [overview, setOverview] = useState('')
+  const [genre, setGenre] = useState('')
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [posterError, setPosterError] = useState(false)
@@ -43,20 +45,29 @@ export default function Recommendations() {
     return () => clearTimeout(timer)
   }, [searchQuery, type, tmdbEnabled])
 
-  const handleSelectMedia = (media) => {
+  const handleSelectMedia = async (media) => {
     setSelectedMedia(media)
     setTitle(media.title)
     setPosterUrl(media.posterUrl || '')
+    setOverview(media.overview || '')
     setPosterError(false)
     setSearchQuery('')
     setShowResults(false)
     setSearchResults([])
+
+    // Obtener detalles adicionales (géneros)
+    const details = await getMediaDetails(media.id, type)
+    if (details?.genres?.length > 0) {
+      setGenre(details.genres[0]) // Primer género
+    }
   }
 
   const handleClearSelection = () => {
     setSelectedMedia(null)
     setTitle('')
     setPosterUrl('')
+    setOverview('')
+    setGenre('')
     setSearchQuery('')
   }
 
@@ -79,6 +90,8 @@ export default function Recommendations() {
             comment,
             poster_url: safePosterUrl,
             tmdb_id: selectedMedia?.id || null,
+            overview: overview || null,
+            genre: genre || null,
           }
         ])
 
@@ -150,24 +163,28 @@ export default function Recommendations() {
               </label>
 
               {selectedMedia ? (
-                <div className="flex items-center gap-4 p-3 bg-surface-200 rounded-lg border border-brand/30">
+                <div className="flex items-start gap-4 p-3 bg-surface-200 rounded-lg border border-brand/30">
                   {selectedMedia.posterUrl && (
                     <img
                       src={selectedMedia.posterUrl}
                       alt={selectedMedia.title}
-                      className="w-14 h-20 object-cover rounded"
+                      className="w-14 h-20 object-cover rounded flex-shrink-0"
                     />
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-white truncate">{selectedMedia.title}</p>
                     <p className="text-sm text-gray-500">
                       {selectedMedia.year} • {selectedMedia.type === 'movie' ? 'Película' : 'Serie'}
+                      {genre && ` • ${genre}`}
                     </p>
+                    {overview && (
+                      <p className="text-xs text-gray-400 mt-2 line-clamp-2">{overview}</p>
+                    )}
                   </div>
                   <button
                     type="button"
                     onClick={handleClearSelection}
-                    className="p-2 text-gray-500 hover:text-white hover:bg-surface-100 rounded-md transition-colors"
+                    className="p-2 text-gray-500 hover:text-white hover:bg-surface-100 rounded-md transition-colors flex-shrink-0"
                   >
                     ✕
                   </button>
@@ -307,7 +324,7 @@ export default function Recommendations() {
           )}
 
           {/* Preview del poster */}
-          {posterUrl && !posterError && (
+          {posterUrl && !posterError && !selectedMedia && (
             <div className="flex justify-center">
               <img
                 src={posterUrl}

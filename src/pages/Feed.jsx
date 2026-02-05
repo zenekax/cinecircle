@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../services/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { Icons } from '../components/Icons'
+import UserAvatar from '../components/UserAvatar'
 
 export default function Feed() {
   const [recommendations, setRecommendations] = useState([])
@@ -32,7 +33,7 @@ export default function Feed() {
         .from('recommendations')
         .select(`
           *,
-          profiles (username, avatar_url)
+          profiles (username, avatar_url, avatar, avatar_color)
         `)
         .order('created_at', { ascending: false })
 
@@ -142,6 +143,12 @@ export default function Feed() {
                         <span className="text-sm text-gray-500">
                           {rec.type === 'movie' ? 'Película' : 'Serie'}
                         </span>
+                        {rec.genre && (
+                          <>
+                            <span className="text-gray-600">•</span>
+                            <span className="text-sm text-gray-500">{rec.genre}</span>
+                          </>
+                        )}
                       </div>
                     </div>
                     <div className="text-right flex-shrink-0">
@@ -156,17 +163,28 @@ export default function Feed() {
                     </div>
                   </div>
 
-                  <p className="text-gray-400 text-sm mb-3 line-clamp-2">
-                    {rec.comment}
-                  </p>
+                  {/* Overview/Resumen de TMDB */}
+                  {rec.overview && (
+                    <p className="text-gray-500 text-xs mb-2 line-clamp-2 italic">
+                      {rec.overview}
+                    </p>
+                  )}
+
+                  {/* Comment */}
+                  {rec.comment && (
+                    <p className="text-gray-400 text-sm mb-3 line-clamp-2">
+                      "{rec.comment}"
+                    </p>
+                  )}
 
                   {/* User */}
                   <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-brand/20 flex items-center justify-center">
-                      <span className="text-brand text-xs font-medium">
-                        {(rec.profiles?.username || 'U')[0].toUpperCase()}
-                      </span>
-                    </div>
+                    <UserAvatar
+                      avatar={rec.profiles?.avatar}
+                      color={rec.profiles?.avatar_color}
+                      username={rec.profiles?.username}
+                      size="sm"
+                    />
                     <span className="text-sm text-gray-500">
                       {rec.profiles?.username || 'Usuario'}
                     </span>
