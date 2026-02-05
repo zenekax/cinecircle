@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { searchMedia, getMediaDetails, isTMDBConfigured } from '../services/tmdb'
 import { sanitizeImageUrl } from '../utils/validation'
+import { Icons } from '../components/Icons'
 
 // Plataformas de streaming disponibles
 const PLATFORMS = [
@@ -186,13 +187,14 @@ export default function Recommendations() {
                   setType('movie')
                   handleClearSelection()
                 }}
-                className={`flex-1 py-2.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                className={`flex-1 py-2.5 rounded-md text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
                   type === 'movie'
                     ? 'bg-brand text-dark-500 shadow-sm'
                     : 'text-gray-400 hover:text-white'
                 }`}
               >
-                🎬 Película
+                <Icons.Clapperboard className="w-4 h-4" />
+                Película
               </button>
               <button
                 type="button"
@@ -200,13 +202,14 @@ export default function Recommendations() {
                   setType('series')
                   handleClearSelection()
                 }}
-                className={`flex-1 py-2.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                className={`flex-1 py-2.5 rounded-md text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
                   type === 'series'
                     ? 'bg-brand text-dark-500 shadow-sm'
                     : 'text-gray-400 hover:text-white'
                 }`}
               >
-                📺 Serie
+                <Icons.Tv className="w-4 h-4" />
+                Serie
               </button>
             </div>
           </div>
@@ -256,9 +259,7 @@ export default function Recommendations() {
                       className="input pl-10"
                       placeholder={`Buscar ${type === 'movie' ? 'película' : 'serie'}...`}
                     />
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
-                      🔍
-                    </span>
+                    <Icons.Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                     {searching && (
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-brand text-sm">
                         Buscando...
@@ -283,7 +284,11 @@ export default function Recommendations() {
                             />
                           ) : (
                             <div className="w-10 h-14 bg-surface-200 rounded flex items-center justify-center">
-                              {type === 'movie' ? '🎬' : '📺'}
+                              {type === 'movie' ? (
+                                <Icons.Clapperboard className="w-5 h-5 text-gray-500" />
+                              ) : (
+                                <Icons.Tv className="w-5 h-5 text-gray-500" />
+                              )}
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
@@ -340,8 +345,9 @@ export default function Recommendations() {
               ))}
             </div>
             {platform && (
-              <p className="text-sm text-brand mt-2">
-                📺 Vista en {platform}
+              <p className="text-sm text-brand mt-2 flex items-center gap-1">
+                <Icons.Tv className="w-4 h-4" />
+                Vista en {platform}
               </p>
             )}
           </div>

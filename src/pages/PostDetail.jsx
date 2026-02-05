@@ -322,8 +322,9 @@ export default function PostDetail() {
               {post.platform && (
                 <>
                   <span className="text-gray-600">•</span>
-                  <span className="text-sm px-3 py-1 bg-brand/20 text-brand rounded-full font-medium">
-                    📺 {post.platform}
+                  <span className="text-sm px-3 py-1 bg-brand/20 text-brand rounded-full font-medium inline-flex items-center gap-1">
+                    <Icons.Tv className="w-3.5 h-3.5" />
+                    {post.platform}
                   </span>
                 </>
               )}

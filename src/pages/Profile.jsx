@@ -377,14 +377,27 @@ export default function Profile() {
           <div className="space-y-4">
             {recentActivity.map((item) => (
               <div key={item.id} className="flex items-center gap-4 pb-4 border-b border-border last:border-0">
-                <div className="text-2xl">
-                  {item.type === 'movie' ? '🎬' : '📺'}
+                <div className="w-10 h-10 rounded-lg bg-surface-100 flex items-center justify-center">
+                  {item.type === 'movie' ? (
+                    <Icons.Clapperboard className="w-5 h-5 text-brand" />
+                  ) : (
+                    <Icons.Tv className="w-5 h-5 text-brand" />
+                  )}
                 </div>
                 <div className="flex-1">
                   <p className="font-medium">{item.title}</p>
-                  <p className="text-sm text-gray-400">
-                    {'⭐'.repeat(item.rating)} • {new Date(item.created_at).toLocaleDateString('es-AR')}
-                  </p>
+                  <div className="flex items-center gap-2 text-sm text-gray-400">
+                    <div className="flex">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Icons.StarFilled
+                          key={star}
+                          className={`w-3 h-3 ${star <= item.rating ? 'text-brand' : 'text-gray-600'}`}
+                        />
+                      ))}
+                    </div>
+                    <span>•</span>
+                    <span>{new Date(item.created_at).toLocaleDateString('es-AR')}</span>
+                  </div>
                 </div>
               </div>
             ))}

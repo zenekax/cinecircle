@@ -24,8 +24,8 @@ export default function Contact() {
           <section className="bg-surface-100 rounded-xl p-6">
             <h2 className="text-lg font-semibold text-white mb-4">Creador</h2>
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-brand/20 flex items-center justify-center text-2xl">
-                👨‍💻
+              <div className="w-16 h-16 rounded-full bg-brand/20 flex items-center justify-center">
+                <Icons.User className="w-8 h-8 text-brand" />
               </div>
               <div>
                 <p className="text-white font-medium text-lg">Ignacio Basso</p>

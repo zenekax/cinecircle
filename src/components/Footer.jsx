@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { Icons } from './Icons'
 
 // Footer con atribución de TMDB y links legales
 export default function Footer() {
@@ -10,7 +11,8 @@ export default function Footer() {
           {/* Logo y descripción */}
           <div className="text-center md:text-left">
             <div className="flex items-center justify-center md:justify-start gap-2 mb-2">
-              <span className="text-xl font-bold text-brand">🎬 CineCircle</span>
+              <Icons.Film className="w-6 h-6 text-brand" />
+              <span className="text-xl font-bold text-brand">CineCircle</span>
             </div>
             <p className="text-sm text-gray-500 max-w-xs">
               La red social para compartir y descubrir películas y series con tus amigos.
@@ -70,8 +72,8 @@ export default function Footer() {
 
           {/* Made with love */}
           <div className="mt-4 text-center">
-            <p className="text-xs text-gray-600">
-              Hecho con ❤️ en Argentina
+            <p className="text-xs text-gray-600 inline-flex items-center gap-1 justify-center">
+              Hecho con <Icons.HeartFilled className="w-3 h-3 text-red-500" /> en Argentina
             </p>
           </div>
         </div>
