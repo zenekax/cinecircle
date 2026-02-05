@@ -250,34 +250,32 @@ export default function Feed() {
           </button>
         </div>
 
-        {/* Filtro por género - scroll horizontal (géneros dinámicos de TMDB) */}
-        {availableGenres.length > 0 && (
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+        {/* Filtro por género - scroll horizontal */}
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+          <button
+            onClick={() => setSelectedGenre('all')}
+            className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+              selectedGenre === 'all'
+                ? 'bg-brand/20 text-brand border border-brand'
+                : 'bg-surface-100 text-gray-400 hover:bg-surface-200 border border-transparent'
+            }`}
+          >
+            Todos
+          </button>
+          {availableGenres.map((genre) => (
             <button
-              onClick={() => setSelectedGenre('all')}
+              key={genre}
+              onClick={() => setSelectedGenre(genre)}
               className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-                selectedGenre === 'all'
+                selectedGenre === genre
                   ? 'bg-brand/20 text-brand border border-brand'
                   : 'bg-surface-100 text-gray-400 hover:bg-surface-200 border border-transparent'
               }`}
             >
-              Todos
+              {genre}
             </button>
-            {availableGenres.map((genre) => (
-              <button
-                key={genre}
-                onClick={() => setSelectedGenre(genre)}
-                className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-                  selectedGenre === genre
-                    ? 'bg-brand/20 text-brand border border-brand'
-                    : 'bg-surface-100 text-gray-400 hover:bg-surface-200 border border-transparent'
-                }`}
-              >
-                {genre}
-              </button>
-            ))}
-          </div>
-        )}
+          ))}
+        </div>
 
         {/* Contador de resultados */}
         {(selectedGenre !== 'all' || selectedType !== 'all') && (
