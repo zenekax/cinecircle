@@ -614,18 +614,22 @@ export default function Feed() {
               className="card card-hover animate-fade-in"
             >
               <div className="flex gap-4">
-                {/* Poster */}
+                {/* Poster - Clickeable */}
                 {rec.poster_url ? (
                   <img
                     src={rec.poster_url}
                     alt={rec.title}
-                    className="w-24 h-36 object-cover rounded-lg flex-shrink-0"
+                    className="w-24 h-36 object-cover rounded-lg flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => navigate(`/post/${rec.id}`)}
                     onError={(e) => {
                       e.target.style.display = 'none'
                     }}
                   />
                 ) : (
-                  <div className="w-24 h-36 bg-surface-100 rounded-lg flex-shrink-0 flex items-center justify-center">
+                  <div
+                    className="w-24 h-36 bg-surface-100 rounded-lg flex-shrink-0 flex items-center justify-center cursor-pointer hover:bg-surface-200 transition-colors"
+                    onClick={() => navigate(`/post/${rec.id}`)}
+                  >
                     {rec.type === 'movie' ? (
                       <Icons.Clapperboard className="w-8 h-8 text-gray-600" />
                     ) : (
@@ -638,7 +642,10 @@ export default function Feed() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-4 mb-2">
                     <div>
-                      <h3 className="text-lg font-semibold text-white leading-tight">
+                      <h3
+                        className="text-lg font-semibold text-white leading-tight cursor-pointer hover:text-brand transition-colors"
+                        onClick={() => navigate(`/post/${rec.id}`)}
+                      >
                         {rec.title}
                       </h3>
                       <div className="flex items-center gap-1.5 mt-1">
