@@ -40,6 +40,15 @@
   ::-webkit-scrollbar-thumb:hover {
     background: #4E4E4E;
   }
+
+  /* Ocultar scrollbar para filtros horizontales */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 @layer components {

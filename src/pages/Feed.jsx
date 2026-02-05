@@ -5,11 +5,28 @@ import { useAuth } from '../hooks/useAuth'
 import { Icons } from '../components/Icons'
 import UserAvatar from '../components/UserAvatar'
 
+// Géneros disponibles para filtrar
+const GENRES = [
+  { id: 'all', label: 'Todos', icon: 'Grid' },
+  { id: 'Acción', label: 'Acción', icon: 'Zap' },
+  { id: 'Comedia', label: 'Comedia', icon: 'Smile' },
+  { id: 'Drama', label: 'Drama', icon: 'Heart' },
+  { id: 'Terror', label: 'Terror', icon: 'Ghost' },
+  { id: 'Suspenso', label: 'Suspenso', icon: 'Eye' },
+  { id: 'Ciencia Ficción', label: 'Sci-Fi', icon: 'Rocket' },
+  { id: 'Romance', label: 'Romance', icon: 'HeartFilled' },
+  { id: 'Animación', label: 'Animación', icon: 'Sparkles' },
+  { id: 'Documental', label: 'Documental', icon: 'FileText' },
+]
+
 export default function Feed() {
   const [recommendations, setRecommendations] = useState([])
+  const [filteredRecs, setFilteredRecs] = useState([])
   const [loading, setLoading] = useState(true)
   const [likesMap, setLikesMap] = useState({}) // { recId: { count, liked } }
   const [commentsMap, setCommentsMap] = useState({}) // { recId: count }
+  const [selectedGenre, setSelectedGenre] = useState('all')
+  const [selectedType, setSelectedType] = useState('all') // 'all', 'movie', 'tv'
   const { user } = useAuth()
   const navigate = useNavigate()
 
@@ -36,6 +53,25 @@ export default function Feed() {
       subscription.unsubscribe()
     }
   }, [])
+
+  // Filtrar recomendaciones cuando cambian los filtros
+  useEffect(() => {
+    let filtered = [...recommendations]
+
+    // Filtrar por género
+    if (selectedGenre !== 'all') {
+      filtered = filtered.filter(rec =>
+        rec.genre?.toLowerCase().includes(selectedGenre.toLowerCase())
+      )
+    }
+
+    // Filtrar por tipo (película/serie)
+    if (selectedType !== 'all') {
+      filtered = filtered.filter(rec => rec.type === selectedType)
+    }
+
+    setFilteredRecs(filtered)
+  }, [recommendations, selectedGenre, selectedType])
 
   const loadRecommendations = async () => {
     try {
@@ -175,12 +211,107 @@ export default function Feed() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 pb-24 lg:pb-8">
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-6">
         <h1 className="text-2xl font-semibold text-white">Feed</h1>
         <p className="text-gray-500 mt-1">Descubrí qué están viendo tus amigos</p>
       </div>
 
-      {recommendations.length === 0 ? (
+      {/* Filtros */}
+      <div className="mb-6 space-y-3">
+        {/* Filtro por tipo */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => setSelectedType('all')}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+              selectedType === 'all'
+                ? 'bg-brand text-white'
+                : 'bg-surface-100 text-gray-400 hover:bg-surface-200'
+            }`}
+          >
+            Todo
+          </button>
+          <button
+            onClick={() => setSelectedType('movie')}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-1.5 ${
+              selectedType === 'movie'
+                ? 'bg-brand text-white'
+                : 'bg-surface-100 text-gray-400 hover:bg-surface-200'
+            }`}
+          >
+            <Icons.Clapperboard className="w-4 h-4" />
+            Películas
+          </button>
+          <button
+            onClick={() => setSelectedType('tv')}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-1.5 ${
+              selectedType === 'tv'
+                ? 'bg-brand text-white'
+                : 'bg-surface-100 text-gray-400 hover:bg-surface-200'
+            }`}
+          >
+            <Icons.Tv className="w-4 h-4" />
+            Series
+          </button>
+        </div>
+
+        {/* Filtro por género - scroll horizontal */}
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+          {GENRES.map((genre) => (
+            <button
+              key={genre.id}
+              onClick={() => setSelectedGenre(genre.id)}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                selectedGenre === genre.id
+                  ? 'bg-brand/20 text-brand border border-brand'
+                  : 'bg-surface-100 text-gray-400 hover:bg-surface-200 border border-transparent'
+              }`}
+            >
+              {genre.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Contador de resultados */}
+        {(selectedGenre !== 'all' || selectedType !== 'all') && (
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-gray-500">
+              {filteredRecs.length} {filteredRecs.length === 1 ? 'resultado' : 'resultados'}
+              {selectedGenre !== 'all' && ` en ${selectedGenre}`}
+              {selectedType !== 'all' && ` (${selectedType === 'movie' ? 'películas' : 'series'})`}
+            </p>
+            <button
+              onClick={() => {
+                setSelectedGenre('all')
+                setSelectedType('all')
+              }}
+              className="text-sm text-brand hover:underline"
+            >
+              Limpiar filtros
+            </button>
+          </div>
+        )}
+      </div>
+
+      {filteredRecs.length === 0 && recommendations.length > 0 ? (
+        <div className="card text-center py-12">
+          <Icons.Search className="w-12 h-12 mx-auto text-gray-600 mb-4" />
+          <h3 className="text-lg font-medium text-white mb-2">
+            No hay resultados
+          </h3>
+          <p className="text-gray-500 mb-4">
+            No encontramos recomendaciones con estos filtros
+          </p>
+          <button
+            onClick={() => {
+              setSelectedGenre('all')
+              setSelectedType('all')
+            }}
+            className="btn btn-secondary"
+          >
+            Limpiar filtros
+          </button>
+        </div>
+      ) : filteredRecs.length === 0 ? (
         <div className="card text-center py-16">
           <Icons.Film className="w-16 h-16 mx-auto text-gray-600 mb-4" />
           <h3 className="text-lg font-medium text-white mb-2">
@@ -192,7 +323,7 @@ export default function Feed() {
         </div>
       ) : (
         <div className="space-y-4">
-          {recommendations.map((rec) => (
+          {filteredRecs.map((rec) => (
             <div
               key={rec.id}
               className="card card-hover animate-fade-in"
