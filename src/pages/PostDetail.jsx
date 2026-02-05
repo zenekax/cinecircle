@@ -4,6 +4,7 @@ import { supabase } from '../services/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { Icons } from '../components/Icons'
 import UserAvatar from '../components/UserAvatar'
+import { PostDetailSkeleton } from '../components/Skeleton'
 
 export default function PostDetail() {
   const { postId } = useParams()
@@ -17,6 +18,7 @@ export default function PostDetail() {
   const [sending, setSending] = useState(false)
   const [liked, setLiked] = useState(false)
   const [likesCount, setLikesCount] = useState(0)
+  const [animatingLike, setAnimatingLike] = useState(false)
   const [inWatchlist, setInWatchlist] = useState(false)
 
   useEffect(() => {
@@ -180,6 +182,12 @@ export default function PostDetail() {
   }
 
   const handleLike = async () => {
+    // Activar animación solo si va a dar like
+    if (!liked) {
+      setAnimatingLike(true)
+      setTimeout(() => setAnimatingLike(false), 400)
+    }
+
     // Optimistic update
     setLiked(!liked)
     setLikesCount(prev => liked ? prev - 1 : prev + 1)
@@ -254,12 +262,19 @@ export default function PostDetail() {
     </div>
   )
 
+  const handleShare = () => {
+    if (!post) return
+    const type = post.type === 'movie' ? 'película' : 'serie'
+    const platform = post.platform ? ` en ${post.platform}` : ''
+    const rating = '⭐'.repeat(post.rating)
+    const text = `¡Te recomiendo esta ${type}!\n\n🎬 *${post.title}*${platform}\n${rating}\n\n${post.comment ? `"${post.comment}"\n\n` : ''}Mirá más recomendaciones en CineCircle 👇\n${window.location.href}`
+
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`
+    window.open(whatsappUrl, '_blank')
+  }
+
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-400">Cargando...</div>
-      </div>
-    )
+    return <PostDetailSkeleton />
   }
 
   if (!post) {
@@ -373,7 +388,7 @@ export default function PostDetail() {
                 }`}
               >
                 {liked ? (
-                  <Icons.HeartFilled className="w-5 h-5" />
+                  <Icons.HeartFilled className={`w-5 h-5 ${animatingLike ? 'animate-like' : ''}`} />
                 ) : (
                   <Icons.Heart className="w-5 h-5" />
                 )}
@@ -387,7 +402,7 @@ export default function PostDetail() {
 
               <button
                 onClick={toggleWatchlist}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ml-auto ${
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
                   inWatchlist
                     ? 'text-brand bg-brand/10'
                     : 'text-gray-500 hover:text-brand hover:bg-brand/10'
@@ -402,6 +417,15 @@ export default function PostDetail() {
                 <span className="font-medium hidden sm:inline">
                   {inWatchlist ? 'En mi lista' : 'Quiero ver'}
                 </span>
+              </button>
+
+              <button
+                onClick={handleShare}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-gray-500 hover:text-green-500 hover:bg-green-500/10 ml-auto"
+                title="Compartir en WhatsApp"
+              >
+                <Icons.Share className="w-5 h-5" />
+                <span className="font-medium hidden sm:inline">Compartir</span>
               </button>
             </div>
           </div>

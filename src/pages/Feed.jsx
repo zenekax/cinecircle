@@ -4,6 +4,7 @@ import { supabase } from '../services/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { Icons } from '../components/Icons'
 import UserAvatar from '../components/UserAvatar'
+import { FeedCardSkeleton, WeeklyPickSkeleton } from '../components/Skeleton'
 
 // Función para obtener la semana del año (usada para seleccionar la reco semanal)
 const getWeekNumber = () => {
@@ -20,10 +21,14 @@ export default function Feed() {
   const [loading, setLoading] = useState(true)
   const [likesMap, setLikesMap] = useState({}) // { recId: { count, liked } }
   const [commentsMap, setCommentsMap] = useState({}) // { recId: count }
+  const [animatingLike, setAnimatingLike] = useState(null) // ID de rec que está animando
   const [selectedGenre, setSelectedGenre] = useState('all')
   const [selectedType, setSelectedType] = useState('all') // 'all', 'movie', 'tv'
+  const [selectedPlatform, setSelectedPlatform] = useState('all') // Filtro por plataforma
   const [availableGenres, setAvailableGenres] = useState([]) // Géneros extraídos de las recomendaciones
+  const [availablePlatforms, setAvailablePlatforms] = useState([]) // Plataformas extraídas de las recomendaciones
   const [weeklyPick, setWeeklyPick] = useState(null) // Recomendación de la semana
+  const [trending, setTrending] = useState([]) // Top 5 más likeadas
   const { user } = useAuth()
   const navigate = useNavigate()
 
@@ -51,15 +56,22 @@ export default function Feed() {
     }
   }, [])
 
-  // Extraer géneros únicos de las recomendaciones
+  // Extraer géneros y plataformas únicos de las recomendaciones
   useEffect(() => {
     const genres = recommendations
       .map(rec => rec.genre)
-      .filter(Boolean) // Eliminar nulls/undefined
-      .filter((genre, index, self) => self.indexOf(genre) === index) // Únicos
+      .filter(Boolean)
+      .filter((genre, index, self) => self.indexOf(genre) === index)
+      .sort()
+
+    const platforms = recommendations
+      .map(rec => rec.platform)
+      .filter(Boolean)
+      .filter((platform, index, self) => self.indexOf(platform) === index)
       .sort()
 
     setAvailableGenres(genres)
+    setAvailablePlatforms(platforms)
   }, [recommendations])
 
   // Seleccionar recomendación de la semana (basada en la semana del año)
@@ -75,6 +87,22 @@ export default function Feed() {
     setWeeklyPick(recommendations[index])
   }, [recommendations])
 
+  // Calcular tendencias (top 5 con más likes)
+  useEffect(() => {
+    if (recommendations.length === 0 || Object.keys(likesMap).length === 0) {
+      setTrending([])
+      return
+    }
+
+    // Ordenar por cantidad de likes y tomar los top 5
+    const sorted = [...recommendations]
+      .filter(rec => likesMap[rec.id]?.count > 0) // Solo los que tienen likes
+      .sort((a, b) => (likesMap[b.id]?.count || 0) - (likesMap[a.id]?.count || 0))
+      .slice(0, 5)
+
+    setTrending(sorted)
+  }, [recommendations, likesMap])
+
   // Filtrar recomendaciones cuando cambian los filtros
   useEffect(() => {
     let filtered = [...recommendations]
@@ -89,8 +117,13 @@ export default function Feed() {
       filtered = filtered.filter(rec => rec.type === selectedType)
     }
 
+    // Filtrar por plataforma
+    if (selectedPlatform !== 'all') {
+      filtered = filtered.filter(rec => rec.platform === selectedPlatform)
+    }
+
     setFilteredRecs(filtered)
-  }, [recommendations, selectedGenre, selectedType])
+  }, [recommendations, selectedGenre, selectedType, selectedPlatform])
 
   const loadRecommendations = async () => {
     try {
@@ -158,6 +191,12 @@ export default function Feed() {
   const handleLike = async (recId) => {
     const currentLiked = likesMap[recId]?.liked
 
+    // Activar animación solo si va a dar like (no quitar)
+    if (!currentLiked) {
+      setAnimatingLike(recId)
+      setTimeout(() => setAnimatingLike(null), 400)
+    }
+
     // Optimistic update
     setLikesMap(prev => ({
       ...prev,
@@ -205,22 +244,49 @@ export default function Feed() {
     )
   }
 
+  const handleShare = (rec) => {
+    const type = rec.type === 'movie' ? 'película' : 'serie'
+    const platform = rec.platform ? ` en ${rec.platform}` : ''
+    const rating = '⭐'.repeat(rec.rating)
+    const text = `¡Te recomiendo esta ${type}!\n\n🎬 *${rec.title}*${platform}\n${rating}\n\n${rec.comment ? `"${rec.comment}"\n\n` : ''}Mirá más recomendaciones en CineCircle 👇\n${window.location.origin}/post/${rec.id}`
+
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`
+    window.open(whatsappUrl, '_blank')
+  }
+
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto px-4 py-8 pb-24 lg:pb-8">
+        {/* Header skeleton */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <div className="h-8 bg-surface-100 rounded w-20 mb-2 animate-pulse" />
+            <div className="h-4 bg-surface-100 rounded w-48 animate-pulse" />
+          </div>
+          <div className="h-10 bg-surface-100 rounded w-28 animate-pulse" />
+        </div>
+
+        {/* Weekly pick skeleton */}
+        <WeeklyPickSkeleton />
+
+        {/* Filter skeletons */}
+        <div className="mb-6 space-y-3">
+          <div className="flex gap-2">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="h-10 bg-surface-100 rounded-full w-24 animate-pulse" />
+            ))}
+          </div>
+          <div className="flex gap-2">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="h-8 bg-surface-100 rounded-full w-20 animate-pulse" />
+            ))}
+          </div>
+        </div>
+
+        {/* Feed cards skeleton */}
         <div className="space-y-4">
           {[1, 2, 3].map(i => (
-            <div key={i} className="card animate-pulse">
-              <div className="flex gap-4">
-                <div className="w-24 h-36 bg-surface-100 rounded-lg" />
-                <div className="flex-1 space-y-3">
-                  <div className="h-6 bg-surface-100 rounded w-1/3" />
-                  <div className="h-4 bg-surface-100 rounded w-1/4" />
-                  <div className="h-4 bg-surface-100 rounded w-full" />
-                  <div className="h-4 bg-surface-100 rounded w-2/3" />
-                </div>
-              </div>
-            </div>
+            <FeedCardSkeleton key={i} />
           ))}
         </div>
       </div>
@@ -340,6 +406,56 @@ export default function Feed() {
         </div>
       )}
 
+      {/* Tendencias - Top 5 más likeadas */}
+      {trending.length > 0 && (
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-3">
+            <Icons.TrendingUp className="w-5 h-5 text-brand" />
+            <h2 className="text-lg font-semibold text-white">Tendencias</h2>
+          </div>
+          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+            {trending.map((rec, index) => (
+              <div
+                key={rec.id}
+                onClick={() => navigate(`/post/${rec.id}`)}
+                className="relative flex-shrink-0 w-32 cursor-pointer group"
+              >
+                {/* Número de ranking */}
+                <div className="absolute -top-2 -left-2 w-7 h-7 bg-brand text-dark-500 rounded-full flex items-center justify-center font-bold text-sm z-10 shadow-lg">
+                  {index + 1}
+                </div>
+
+                {/* Poster */}
+                {rec.poster_url ? (
+                  <img
+                    src={rec.poster_url}
+                    alt={rec.title}
+                    className="w-32 h-48 object-cover rounded-lg shadow-md group-hover:scale-105 transition-transform"
+                  />
+                ) : (
+                  <div className="w-32 h-48 bg-surface-100 rounded-lg flex items-center justify-center">
+                    {rec.type === 'movie' ? (
+                      <Icons.Clapperboard className="w-8 h-8 text-gray-600" />
+                    ) : (
+                      <Icons.Tv className="w-8 h-8 text-gray-600" />
+                    )}
+                  </div>
+                )}
+
+                {/* Info overlay */}
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-2 rounded-b-lg">
+                  <p className="text-white text-xs font-medium truncate">{rec.title}</p>
+                  <div className="flex items-center gap-1 text-red-400 mt-0.5">
+                    <Icons.HeartFilled className="w-3 h-3" />
+                    <span className="text-xs">{likesMap[rec.id]?.count || 0}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Filtros */}
       <div className="mb-6 space-y-3">
         {/* Filtro por tipo */}
@@ -366,9 +482,9 @@ export default function Feed() {
             Películas
           </button>
           <button
-            onClick={() => setSelectedType('series')}
+            onClick={() => setSelectedType('tv')}
             className={`px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-1.5 ${
-              selectedType === 'series'
+              selectedType === 'tv'
                 ? 'bg-brand text-white'
                 : 'bg-surface-100 text-gray-400 hover:bg-surface-200'
             }`}
@@ -378,45 +494,79 @@ export default function Feed() {
           </button>
         </div>
 
-        {/* Filtro por género - scroll horizontal */}
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-          <button
-            onClick={() => setSelectedGenre('all')}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-              selectedGenre === 'all'
-                ? 'bg-brand/20 text-brand border border-brand'
-                : 'bg-surface-100 text-gray-400 hover:bg-surface-200 border border-transparent'
-            }`}
-          >
-            Todos
-          </button>
-          {availableGenres.map((genre) => (
+        {/* Filtro por plataforma - scroll horizontal */}
+        {availablePlatforms.length > 0 && (
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
             <button
-              key={genre}
-              onClick={() => setSelectedGenre(genre)}
+              onClick={() => setSelectedPlatform('all')}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all flex items-center gap-1.5 ${
+                selectedPlatform === 'all'
+                  ? 'bg-purple-500/20 text-purple-400 border border-purple-500'
+                  : 'bg-surface-100 text-gray-400 hover:bg-surface-200 border border-transparent'
+              }`}
+            >
+              <Icons.Monitor className="w-3.5 h-3.5" />
+              Todas
+            </button>
+            {availablePlatforms.map((platform) => (
+              <button
+                key={platform}
+                onClick={() => setSelectedPlatform(platform)}
+                className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                  selectedPlatform === platform
+                    ? 'bg-purple-500/20 text-purple-400 border border-purple-500'
+                    : 'bg-surface-100 text-gray-400 hover:bg-surface-200 border border-transparent'
+                }`}
+              >
+                {platform}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Filtro por género - scroll horizontal */}
+        {availableGenres.length > 0 && (
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+            <button
+              onClick={() => setSelectedGenre('all')}
               className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-                selectedGenre === genre
+                selectedGenre === 'all'
                   ? 'bg-brand/20 text-brand border border-brand'
                   : 'bg-surface-100 text-gray-400 hover:bg-surface-200 border border-transparent'
               }`}
             >
-              {genre}
+              Todos los géneros
             </button>
-          ))}
-        </div>
+            {availableGenres.map((genre) => (
+              <button
+                key={genre}
+                onClick={() => setSelectedGenre(genre)}
+                className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                  selectedGenre === genre
+                    ? 'bg-brand/20 text-brand border border-brand'
+                    : 'bg-surface-100 text-gray-400 hover:bg-surface-200 border border-transparent'
+                }`}
+              >
+                {genre}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Contador de resultados */}
-        {(selectedGenre !== 'all' || selectedType !== 'all') && (
+        {(selectedGenre !== 'all' || selectedType !== 'all' || selectedPlatform !== 'all') && (
           <div className="flex items-center justify-between">
             <p className="text-sm text-gray-500">
               {filteredRecs.length} {filteredRecs.length === 1 ? 'resultado' : 'resultados'}
-              {selectedGenre !== 'all' && ` en ${selectedGenre}`}
               {selectedType !== 'all' && ` • ${selectedType === 'movie' ? 'Películas' : 'Series'}`}
+              {selectedPlatform !== 'all' && ` • ${selectedPlatform}`}
+              {selectedGenre !== 'all' && ` • ${selectedGenre}`}
             </p>
             <button
               onClick={() => {
                 setSelectedGenre('all')
                 setSelectedType('all')
+                setSelectedPlatform('all')
               }}
               className="text-sm text-brand hover:underline"
             >
@@ -439,6 +589,7 @@ export default function Feed() {
             onClick={() => {
               setSelectedGenre('all')
               setSelectedType('all')
+              setSelectedPlatform('all')
             }}
             className="btn btn-secondary"
           >
@@ -570,7 +721,7 @@ export default function Feed() {
                         }`}
                       >
                         {likesMap[rec.id]?.liked ? (
-                          <Icons.HeartFilled className="w-4 h-4" />
+                          <Icons.HeartFilled className={`w-4 h-4 ${animatingLike === rec.id ? 'animate-like' : ''}`} />
                         ) : (
                           <Icons.Heart className="w-4 h-4" />
                         )}
@@ -587,6 +738,14 @@ export default function Feed() {
                         <span className="text-sm font-medium">
                           {commentsMap[rec.id] || 0}
                         </span>
+                      </button>
+
+                      <button
+                        onClick={() => handleShare(rec)}
+                        className="flex items-center gap-1.5 px-2 py-1 rounded-md text-gray-500 hover:text-green-500 hover:bg-green-500/10 transition-all"
+                        title="Compartir en WhatsApp"
+                      >
+                        <Icons.Share className="w-4 h-4" />
                       </button>
                     </div>
                   </div>

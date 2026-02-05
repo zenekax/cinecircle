@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth'
 import { Icons } from '../components/Icons'
 import UserAvatar from '../components/UserAvatar'
 import { BadgeList, calculateBadges } from '../components/Badges'
+import { ProfileSkeleton } from '../components/Skeleton'
 
 export default function UserProfile() {
   const { userId } = useParams()
@@ -176,11 +177,7 @@ export default function UserProfile() {
   )
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-400">Cargando perfil...</div>
-      </div>
-    )
+    return <ProfileSkeleton />
   }
 
   if (!profile) {
