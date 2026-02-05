@@ -8,6 +8,8 @@ import UserAvatar from '../components/UserAvatar'
 export default function Feed() {
   const [recommendations, setRecommendations] = useState([])
   const [loading, setLoading] = useState(true)
+  const [likesMap, setLikesMap] = useState({}) // { recId: { count, liked } }
+  const [commentsMap, setCommentsMap] = useState({}) // { recId: count }
   const { user } = useAuth()
   const navigate = useNavigate()
 
@@ -15,12 +17,18 @@ export default function Feed() {
     loadRecommendations()
 
     const subscription = supabase
-      .channel('recommendations')
+      .channel('feed-updates')
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'recommendations' },
-        () => {
-          loadRecommendations()
-        }
+        () => loadRecommendations()
+      )
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'likes' },
+        () => loadLikesAndComments()
+      )
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'comments' },
+        () => loadLikesAndComments()
       )
       .subscribe()
 
@@ -41,10 +49,91 @@ export default function Feed() {
 
       if (error) throw error
       setRecommendations(data || [])
+
+      // Cargar likes y comentarios después de cargar recomendaciones
+      if (data && data.length > 0) {
+        await loadLikesAndComments(data.map(r => r.id))
+      }
     } catch (error) {
       console.error('Error:', error.message)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadLikesAndComments = async (recIds) => {
+    const ids = recIds || recommendations.map(r => r.id)
+    if (ids.length === 0) return
+
+    try {
+      // Cargar likes
+      const { data: allLikes } = await supabase
+        .from('likes')
+        .select('recommendation_id, user_id')
+        .in('recommendation_id', ids)
+
+      // Cargar comentarios count
+      const { data: allComments } = await supabase
+        .from('comments')
+        .select('recommendation_id')
+        .in('recommendation_id', ids)
+
+      // Procesar likes
+      const newLikesMap = {}
+      ids.forEach(id => {
+        const recLikes = allLikes?.filter(l => l.recommendation_id === id) || []
+        newLikesMap[id] = {
+          count: recLikes.length,
+          liked: recLikes.some(l => l.user_id === user?.id)
+        }
+      })
+      setLikesMap(newLikesMap)
+
+      // Procesar comentarios
+      const newCommentsMap = {}
+      ids.forEach(id => {
+        newCommentsMap[id] = allComments?.filter(c => c.recommendation_id === id).length || 0
+      })
+      setCommentsMap(newCommentsMap)
+    } catch (error) {
+      console.error('Error cargando likes/comentarios:', error.message)
+    }
+  }
+
+  const handleLike = async (recId) => {
+    const currentLiked = likesMap[recId]?.liked
+
+    // Optimistic update
+    setLikesMap(prev => ({
+      ...prev,
+      [recId]: {
+        count: prev[recId]?.count + (currentLiked ? -1 : 1),
+        liked: !currentLiked
+      }
+    }))
+
+    try {
+      if (currentLiked) {
+        await supabase
+          .from('likes')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('recommendation_id', recId)
+      } else {
+        await supabase
+          .from('likes')
+          .insert([{ user_id: user.id, recommendation_id: recId }])
+      }
+    } catch (error) {
+      // Revert on error
+      setLikesMap(prev => ({
+        ...prev,
+        [recId]: {
+          count: prev[recId]?.count + (currentLiked ? 1 : -1),
+          liked: currentLiked
+        }
+      }))
+      console.error('Error:', error.message)
     }
   }
 
@@ -179,21 +268,55 @@ export default function Feed() {
                     </p>
                   )}
 
-                  {/* User - Clickeable */}
-                  <button
-                    onClick={() => navigate(`/user/${rec.user_id}`)}
-                    className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-                  >
-                    <UserAvatar
-                      avatar={rec.profiles?.avatar}
-                      color={rec.profiles?.avatar_color}
-                      username={rec.profiles?.username}
-                      size="sm"
-                    />
-                    <span className="text-sm text-gray-500 hover:text-brand transition-colors">
-                      {rec.profiles?.username || 'Usuario'}
-                    </span>
-                  </button>
+                  {/* User and Actions */}
+                  <div className="flex items-center justify-between">
+                    {/* User - Clickeable */}
+                    <button
+                      onClick={() => navigate(`/user/${rec.user_id}`)}
+                      className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                    >
+                      <UserAvatar
+                        avatar={rec.profiles?.avatar}
+                        color={rec.profiles?.avatar_color}
+                        username={rec.profiles?.username}
+                        size="sm"
+                      />
+                      <span className="text-sm text-gray-500 hover:text-brand transition-colors">
+                        {rec.profiles?.username || 'Usuario'}
+                      </span>
+                    </button>
+
+                    {/* Like and Comment buttons */}
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => handleLike(rec.id)}
+                        className={`flex items-center gap-1.5 px-2 py-1 rounded-md transition-all ${
+                          likesMap[rec.id]?.liked
+                            ? 'text-red-500 bg-red-500/10'
+                            : 'text-gray-500 hover:text-red-500 hover:bg-red-500/10'
+                        }`}
+                      >
+                        {likesMap[rec.id]?.liked ? (
+                          <Icons.HeartFilled className="w-4 h-4" />
+                        ) : (
+                          <Icons.Heart className="w-4 h-4" />
+                        )}
+                        <span className="text-sm font-medium">
+                          {likesMap[rec.id]?.count || 0}
+                        </span>
+                      </button>
+
+                      <button
+                        onClick={() => navigate(`/post/${rec.id}`)}
+                        className="flex items-center gap-1.5 px-2 py-1 rounded-md text-gray-500 hover:text-brand hover:bg-brand/10 transition-all"
+                      >
+                        <Icons.MessageSquare className="w-4 h-4" />
+                        <span className="text-sm font-medium">
+                          {commentsMap[rec.id] || 0}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

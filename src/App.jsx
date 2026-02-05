@@ -7,6 +7,7 @@ import Recommendations from './pages/Recommendations'
 import Goals from './pages/Goals'
 import Profile from './pages/Profile'
 import UserProfile from './pages/UserProfile'
+import PostDetail from './pages/PostDetail'
 import Friends from './pages/Friends'
 import Messages from './pages/Messages'
 import './index.css'
@@ -26,6 +27,7 @@ function AppContent() {
         <Route path="/goals" element={<Goals />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/user/:userId" element={<UserProfile />} />
+        <Route path="/post/:postId" element={<PostDetail />} />
         <Route path="/friends" element={<Friends />} />
         <Route path="/messages" element={<Messages />} />
         <Route path="/messages/:friendId" element={<Messages />} />
