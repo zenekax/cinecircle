@@ -3,6 +3,7 @@ import { supabase } from '../services/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useParams, useNavigate } from 'react-router-dom'
 import { searchMedia, isTMDBConfigured } from '../services/tmdb'
+import UserAvatar from '../components/UserAvatar'
 
 export default function Messages() {
   const { friendId } = useParams()
@@ -85,29 +86,27 @@ export default function Messages() {
 
   const loadConversations = async () => {
     try {
-      // Obtener todos los mensajes y agrupar por conversación
+      // Obtener todos los mensajes del usuario
       const { data: msgs, error } = await supabase
         .from('messages')
-        .select(`
-          *,
-          sender:profiles!messages_sender_id_fkey(username, avatar_url),
-          receiver:profiles!messages_receiver_id_fkey(username, avatar_url)
-        `)
+        .select('*')
         .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
         .order('created_at', { ascending: false })
 
       if (error) throw error
 
-      // Agrupar por amigo
+      // Agrupar por amigo y obtener IDs únicos
       const convMap = new Map()
+      const friendIds = new Set()
+
       msgs?.forEach(msg => {
         const friendIdKey = msg.sender_id === user.id ? msg.receiver_id : msg.sender_id
-        const friendData = msg.sender_id === user.id ? msg.receiver : msg.sender
+        friendIds.add(friendIdKey)
 
         if (!convMap.has(friendIdKey)) {
           convMap.set(friendIdKey, {
             friendId: friendIdKey,
-            username: friendData?.username || 'Usuario',
+            username: 'Usuario',
             lastMessage: msg,
             unread: msg.receiver_id === user.id && !msg.read_at ? 1 : 0
           })
@@ -115,6 +114,22 @@ export default function Messages() {
           convMap.get(friendIdKey).unread++
         }
       })
+
+      // Obtener perfiles de los amigos
+      if (friendIds.size > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, username, avatar, avatar_color')
+          .in('id', Array.from(friendIds))
+
+        profiles?.forEach(profile => {
+          if (convMap.has(profile.id)) {
+            convMap.get(profile.id).username = profile.username || 'Usuario'
+            convMap.get(profile.id).avatar = profile.avatar
+            convMap.get(profile.id).avatar_color = profile.avatar_color
+          }
+        })
+      }
 
       setConversations(Array.from(convMap.values()))
     } catch (error) {
@@ -128,7 +143,7 @@ export default function Messages() {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, username, avatar_url')
+        .select('id, username, avatar, avatar_color')
         .eq('id', friendId)
         .single()
 
@@ -251,15 +266,18 @@ export default function Messages() {
               <button
                 key={conv.friendId}
                 onClick={() => navigate(`/messages/${conv.friendId}`)}
-                className="card w-full text-left hover:bg-gray-700 transition-colors"
+                className="card w-full text-left hover:bg-surface-100 transition-colors"
               >
                 <div className="flex items-center gap-4">
                   <div className="relative">
-                    <div className="w-12 h-12 bg-primary-600 rounded-full flex items-center justify-center text-xl">
-                      👤
-                    </div>
+                    <UserAvatar
+                      avatar={conv.avatar}
+                      color={conv.avatar_color}
+                      username={conv.username}
+                      size="lg"
+                    />
                     {conv.unread > 0 && (
-                      <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-xs flex items-center justify-center">
+                      <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-xs flex items-center justify-center font-bold">
                         {conv.unread}
                       </span>
                     )}
@@ -287,18 +305,21 @@ export default function Messages() {
 
   // Vista de conversación individual
   return (
-    <div className="flex flex-col h-screen bg-gray-900">
+    <div className="flex flex-col h-screen bg-dark-500">
       {/* Header */}
-      <div className="bg-gray-800 border-b border-gray-700 px-4 py-3 flex items-center gap-4">
+      <div className="bg-dark-400 border-b border-border px-4 py-3 flex items-center gap-4">
         <button
           onClick={() => navigate('/messages')}
           className="text-gray-400 hover:text-white"
         >
           ← Volver
         </button>
-        <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center">
-          👤
-        </div>
+        <UserAvatar
+          avatar={friend?.avatar}
+          color={friend?.avatar_color}
+          username={friend?.username}
+          size="md"
+        />
         <div>
           <p className="font-bold text-white">{friend?.username || 'Cargando...'}</p>
         </div>
