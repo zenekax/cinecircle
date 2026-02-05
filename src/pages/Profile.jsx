@@ -16,6 +16,13 @@ export default function Profile() {
     completedGoals: 0,
     totalGoals: 0,
     friends: 0,
+    movies: 0,
+    series: 0,
+    likesReceived: 0,
+    commentsReceived: 0,
+    topGenres: [],
+    watchlistPending: 0,
+    watchlistWatched: 0,
   })
   const [recentActivity, setRecentActivity] = useState([])
 
@@ -53,10 +60,10 @@ export default function Profile() {
       }
 
       // Cargar estadísticas
-      const [recsResponse, goalsResponse, friendsResponse] = await Promise.all([
+      const [recsResponse, goalsResponse, friendsResponse, watchlistResponse] = await Promise.all([
         supabase
           .from('recommendations')
-          .select('*', { count: 'exact' })
+          .select('*')
           .eq('user_id', user.id),
         supabase
           .from('goals')
@@ -66,17 +73,58 @@ export default function Profile() {
           .from('friendships')
           .select('*', { count: 'exact', head: true })
           .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`)
-          .eq('status', 'accepted')
+          .eq('status', 'accepted'),
+        supabase
+          .from('watchlist')
+          .select('*')
+          .eq('user_id', user.id)
       ])
+
+      const recs = recsResponse.data || []
+      const recIds = recs.map(r => r.id)
+
+      // Contar likes y comentarios recibidos
+      let likesReceived = 0
+      let commentsReceived = 0
+
+      if (recIds.length > 0) {
+        const [likesRes, commentsRes] = await Promise.all([
+          supabase.from('likes').select('id', { count: 'exact', head: true }).in('recommendation_id', recIds),
+          supabase.from('comments').select('id', { count: 'exact', head: true }).in('recommendation_id', recIds)
+        ])
+        likesReceived = likesRes.count || 0
+        commentsReceived = commentsRes.count || 0
+      }
+
+      // Calcular géneros favoritos
+      const genreCounts = {}
+      recs.forEach(r => {
+        if (r.genre) {
+          genreCounts[r.genre] = (genreCounts[r.genre] || 0) + 1
+        }
+      })
+      const topGenres = Object.entries(genreCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([genre, count]) => ({ genre, count }))
 
       const completedGoals = goalsResponse.data?.filter(g => g.completed).length || 0
       const totalGoals = goalsResponse.data?.length || 0
 
+      const watchlist = watchlistResponse.data || []
+
       setStats({
-        totalRecommendations: recsResponse.count || 0,
+        totalRecommendations: recs.length,
         completedGoals,
         totalGoals,
         friends: friendsResponse.count || 0,
+        movies: recs.filter(r => r.type === 'movie').length,
+        series: recs.filter(r => r.type === 'series').length,
+        likesReceived,
+        commentsReceived,
+        topGenres,
+        watchlistPending: watchlist.filter(w => !w.watched).length,
+        watchlistWatched: watchlist.filter(w => w.watched).length,
       })
 
       // Cargar actividad reciente
@@ -170,8 +218,8 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* Estadísticas */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      {/* Estadísticas principales */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div className="card text-center py-4">
           <div className="text-3xl font-bold text-brand">
             {stats.totalRecommendations}
@@ -187,17 +235,131 @@ export default function Profile() {
         </div>
 
         <div className="card text-center py-4">
-          <div className="text-3xl font-bold text-green-500">
-            {stats.completedGoals}
+          <div className="text-3xl font-bold text-red-500">
+            {stats.likesReceived}
           </div>
-          <div className="text-gray-400 text-sm mt-1">Metas Completadas</div>
+          <div className="text-gray-400 text-sm mt-1">Likes Recibidos</div>
         </div>
 
         <div className="card text-center py-4">
           <div className="text-3xl font-bold text-purple-500">
-            {stats.totalGoals}
+            {stats.commentsReceived}
           </div>
-          <div className="text-gray-400 text-sm mt-1">Metas Totales</div>
+          <div className="text-gray-400 text-sm mt-1">Comentarios</div>
+        </div>
+      </div>
+
+      {/* Estadísticas detalladas */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        {/* Películas vs Series */}
+        <div className="card">
+          <h4 className="text-sm font-medium text-gray-400 mb-4 flex items-center gap-2">
+            <Icons.BarChart className="w-4 h-4" />
+            Tipo de contenido
+          </h4>
+          <div className="space-y-3">
+            <div>
+              <div className="flex justify-between text-sm mb-1">
+                <span className="flex items-center gap-2">
+                  <Icons.Clapperboard className="w-4 h-4 text-blue-400" />
+                  Películas
+                </span>
+                <span className="text-white font-medium">{stats.movies}</span>
+              </div>
+              <div className="h-2 bg-surface-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-blue-500 rounded-full transition-all"
+                  style={{ width: `${stats.totalRecommendations ? (stats.movies / stats.totalRecommendations) * 100 : 0}%` }}
+                />
+              </div>
+            </div>
+            <div>
+              <div className="flex justify-between text-sm mb-1">
+                <span className="flex items-center gap-2">
+                  <Icons.Tv className="w-4 h-4 text-purple-400" />
+                  Series
+                </span>
+                <span className="text-white font-medium">{stats.series}</span>
+              </div>
+              <div className="h-2 bg-surface-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-purple-500 rounded-full transition-all"
+                  style={{ width: `${stats.totalRecommendations ? (stats.series / stats.totalRecommendations) * 100 : 0}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Géneros favoritos */}
+        <div className="card">
+          <h4 className="text-sm font-medium text-gray-400 mb-4 flex items-center gap-2">
+            <Icons.StarFilled className="w-4 h-4" />
+            Géneros favoritos
+          </h4>
+          {stats.topGenres.length > 0 ? (
+            <div className="space-y-3">
+              {stats.topGenres.map((item, index) => (
+                <div key={item.genre} className="flex items-center gap-3">
+                  <span className="text-lg">
+                    {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
+                  </span>
+                  <div className="flex-1">
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="text-white">{item.genre}</span>
+                      <span className="text-gray-400">{item.count} recos</span>
+                    </div>
+                    <div className="h-1.5 bg-surface-100 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-brand rounded-full"
+                        style={{ width: `${(item.count / stats.totalRecommendations) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-500 text-sm text-center py-4">
+              Agregá recomendaciones para ver tus géneros favoritos
+            </p>
+          )}
+        </div>
+
+        {/* Watchlist */}
+        <div className="card">
+          <h4 className="text-sm font-medium text-gray-400 mb-4 flex items-center gap-2">
+            <Icons.Bookmark className="w-4 h-4" />
+            Mi Watchlist
+          </h4>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="text-center p-3 bg-yellow-500/10 rounded-lg">
+              <div className="text-2xl font-bold text-yellow-500">{stats.watchlistPending}</div>
+              <div className="text-xs text-gray-400 mt-1">Pendientes</div>
+            </div>
+            <div className="text-center p-3 bg-brand/10 rounded-lg">
+              <div className="text-2xl font-bold text-brand">{stats.watchlistWatched}</div>
+              <div className="text-xs text-gray-400 mt-1">Vistas</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Metas */}
+        <div className="card">
+          <h4 className="text-sm font-medium text-gray-400 mb-4 flex items-center gap-2">
+            <Icons.Target className="w-4 h-4" />
+            Metas
+          </h4>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="text-center p-3 bg-green-500/10 rounded-lg">
+              <div className="text-2xl font-bold text-green-500">{stats.completedGoals}</div>
+              <div className="text-xs text-gray-400 mt-1">Completadas</div>
+            </div>
+            <div className="text-center p-3 bg-surface-100 rounded-lg">
+              <div className="text-2xl font-bold text-gray-400">{stats.totalGoals - stats.completedGoals}</div>
+              <div className="text-xs text-gray-400 mt-1">Pendientes</div>
+            </div>
+          </div>
         </div>
       </div>
 
