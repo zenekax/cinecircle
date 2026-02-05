@@ -10,20 +10,25 @@ export default function Navbar() {
   const location = useLocation()
   const [unreadCount, setUnreadCount] = useState(0)
   const [pendingFriends, setPendingFriends] = useState(0)
+  const [unreadNotifications, setUnreadNotifications] = useState(0)
 
   useEffect(() => {
     if (user) {
-      loadNotifications()
+      loadNotificationCounts()
 
       const subscription = supabase
         .channel('navbar-notifications')
         .on('postgres_changes',
           { event: '*', schema: 'public', table: 'messages' },
-          () => loadNotifications()
+          () => loadNotificationCounts()
         )
         .on('postgres_changes',
           { event: '*', schema: 'public', table: 'friendships' },
-          () => loadNotifications()
+          () => loadNotificationCounts()
+        )
+        .on('postgres_changes',
+          { event: '*', schema: 'public', table: 'notifications' },
+          () => loadNotificationCounts()
         )
         .subscribe()
 
@@ -31,23 +36,29 @@ export default function Navbar() {
     }
   }, [user])
 
-  const loadNotifications = async () => {
+  const loadNotificationCounts = async () => {
     try {
-      const { count: msgCount } = await supabase
-        .from('messages')
-        .select('*', { count: 'exact', head: true })
-        .eq('receiver_id', user.id)
-        .is('read_at', null)
+      const [msgRes, friendRes, notifRes] = await Promise.all([
+        supabase
+          .from('messages')
+          .select('*', { count: 'exact', head: true })
+          .eq('receiver_id', user.id)
+          .is('read_at', null),
+        supabase
+          .from('friendships')
+          .select('*', { count: 'exact', head: true })
+          .eq('addressee_id', user.id)
+          .eq('status', 'pending'),
+        supabase
+          .from('notifications')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .eq('read', false)
+      ])
 
-      setUnreadCount(msgCount || 0)
-
-      const { count: friendCount } = await supabase
-        .from('friendships')
-        .select('*', { count: 'exact', head: true })
-        .eq('addressee_id', user.id)
-        .eq('status', 'pending')
-
-      setPendingFriends(friendCount || 0)
+      setUnreadCount(msgRes.count || 0)
+      setPendingFriends(friendRes.count || 0)
+      setUnreadNotifications(notifRes.count || 0)
     } catch (error) {
       console.error('Error cargando notificaciones:', error.message)
     }
@@ -127,6 +138,20 @@ export default function Navbar() {
                 title="Buscar"
               >
                 <Icons.Search className="w-5 h-5" />
+              </button>
+
+              {/* Notifications button */}
+              <button
+                onClick={() => navigate('/notifications')}
+                className="relative p-2 rounded-lg text-gray-400 hover:text-white hover:bg-surface-100 transition-all"
+                title="Notificaciones"
+              >
+                <Icons.Bell className="w-5 h-5" />
+                {unreadNotifications > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white rounded-full text-xs font-bold flex items-center justify-center px-1">
+                    {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                  </span>
+                )}
               </button>
 
               <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-md bg-surface-100/50">
