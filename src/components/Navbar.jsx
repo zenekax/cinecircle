@@ -120,6 +120,15 @@ export default function Navbar() {
 
             {/* User Section */}
             <div className="flex items-center gap-3">
+              {/* Search button */}
+              <button
+                onClick={() => navigate('/search')}
+                className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-surface-100 transition-all"
+                title="Buscar"
+              >
+                <Icons.Search className="w-5 h-5" />
+              </button>
+
               <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-md bg-surface-100/50">
                 <div className="w-6 h-6 rounded-full bg-brand/20 flex items-center justify-center">
                   <span className="text-brand text-xs font-semibold">

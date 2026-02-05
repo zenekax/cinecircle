@@ -12,6 +12,7 @@ import Friends from './pages/Friends'
 import Messages from './pages/Messages'
 import Watchlist from './pages/Watchlist'
 import Rankings from './pages/Rankings'
+import Search from './pages/Search'
 import './index.css'
 
 function AppContent() {
@@ -35,6 +36,7 @@ function AppContent() {
         <Route path="/messages/:friendId" element={<Messages />} />
         <Route path="/watchlist" element={<Watchlist />} />
         <Route path="/rankings" element={<Rankings />} />
+        <Route path="/search" element={<Search />} />
       </Routes>
     </div>
   )
