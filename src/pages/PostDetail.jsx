@@ -472,6 +472,21 @@ export default function PostDetail() {
                 <Icons.Share className="w-5 h-5" />
                 <span className="font-medium hidden sm:inline">Compartir</span>
               </button>
+
+              {/* Botón eliminar - solo para el dueño */}
+              {isOwner && (
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-gray-500 hover:text-red-500 hover:bg-red-500/10 disabled:opacity-50"
+                  title="Eliminar recomendación"
+                >
+                  <Icons.Trash className="w-5 h-5" />
+                  <span className="font-medium hidden sm:inline">
+                    {deleting ? 'Eliminando...' : 'Eliminar'}
+                  </span>
+                </button>
+              )}
             </div>
           </div>
         </div>
