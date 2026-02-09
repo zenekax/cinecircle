@@ -423,70 +423,80 @@ export default function PostDetail() {
             </button>
 
             {/* Actions */}
-            <div className="flex items-center gap-4 mt-4 pt-4 border-t border-border">
-              <button
-                onClick={handleLike}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
-                  liked
-                    ? 'text-red-500 bg-red-500/10'
-                    : 'text-gray-500 hover:text-red-500 hover:bg-red-500/10'
-                }`}
-              >
-                {liked ? (
-                  <Icons.HeartFilled className={`w-5 h-5 ${animatingLike ? 'animate-like' : ''}`} />
-                ) : (
-                  <Icons.Heart className="w-5 h-5" />
-                )}
-                <span className="font-medium">{likesCount} Me gusta</span>
-              </button>
+            <div className="mt-4 pt-4 border-t border-border">
+              {/* Primera fila: Like, Comentarios, Watchlist */}
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <button
+                    onClick={handleLike}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg transition-all text-sm ${
+                      liked
+                        ? 'text-red-500 bg-red-500/10'
+                        : 'text-gray-500 hover:text-red-500 hover:bg-red-500/10'
+                    }`}
+                  >
+                    {liked ? (
+                      <Icons.HeartFilled className={`w-4 h-4 sm:w-5 sm:h-5 ${animatingLike ? 'animate-like' : ''}`} />
+                    ) : (
+                      <Icons.Heart className="w-4 h-4 sm:w-5 sm:h-5" />
+                    )}
+                    <span className="font-medium">{likesCount}</span>
+                    <span className="hidden sm:inline">Me gusta</span>
+                  </button>
 
-              <div className="flex items-center gap-2 text-gray-500">
-                <Icons.MessageSquare className="w-5 h-5" />
-                <span>{comments.length} Comentarios</span>
+                  <div className="flex items-center gap-1.5 px-2.5 py-1.5 text-gray-500 text-sm">
+                    <Icons.MessageSquare className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <span>{comments.length}</span>
+                    <span className="hidden sm:inline">Comentarios</span>
+                  </div>
+
+                  <button
+                    onClick={toggleWatchlist}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg transition-all text-sm ${
+                      inWatchlist
+                        ? 'text-brand bg-brand/10'
+                        : 'text-gray-500 hover:text-brand hover:bg-brand/10'
+                    }`}
+                    title={inWatchlist ? 'Quitar de mi lista' : 'Agregar a mi lista'}
+                  >
+                    {inWatchlist ? (
+                      <Icons.BookmarkFilled className="w-4 h-4 sm:w-5 sm:h-5" />
+                    ) : (
+                      <Icons.Bookmark className="w-4 h-4 sm:w-5 sm:h-5" />
+                    )}
+                    <span className="hidden sm:inline font-medium">
+                      {inWatchlist ? 'En mi lista' : 'Quiero ver'}
+                    </span>
+                  </button>
+                </div>
+
+                {/* Segunda parte: Compartir y Eliminar */}
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <button
+                    onClick={handleShare}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg transition-all text-gray-500 hover:text-green-500 hover:bg-green-500/10 text-sm"
+                    title="Compartir en WhatsApp"
+                  >
+                    <Icons.Share className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <span className="hidden sm:inline font-medium">Compartir</span>
+                  </button>
+
+                  {/* Botón eliminar - solo para el dueño */}
+                  {isOwner && (
+                    <button
+                      onClick={handleDelete}
+                      disabled={deleting}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg transition-all text-gray-500 hover:text-red-500 hover:bg-red-500/10 disabled:opacity-50 text-sm"
+                      title="Eliminar recomendación"
+                    >
+                      <Icons.Trash className="w-4 h-4 sm:w-5 sm:h-5" />
+                      <span className="hidden sm:inline font-medium">
+                        {deleting ? 'Eliminando...' : 'Eliminar'}
+                      </span>
+                    </button>
+                  )}
+                </div>
               </div>
-
-              <button
-                onClick={toggleWatchlist}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
-                  inWatchlist
-                    ? 'text-brand bg-brand/10'
-                    : 'text-gray-500 hover:text-brand hover:bg-brand/10'
-                }`}
-                title={inWatchlist ? 'Quitar de mi lista' : 'Agregar a mi lista'}
-              >
-                {inWatchlist ? (
-                  <Icons.BookmarkFilled className="w-5 h-5" />
-                ) : (
-                  <Icons.Bookmark className="w-5 h-5" />
-                )}
-                <span className="font-medium hidden sm:inline">
-                  {inWatchlist ? 'En mi lista' : 'Quiero ver'}
-                </span>
-              </button>
-
-              <button
-                onClick={handleShare}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-gray-500 hover:text-green-500 hover:bg-green-500/10 ml-auto"
-                title="Compartir en WhatsApp"
-              >
-                <Icons.Share className="w-5 h-5" />
-                <span className="font-medium hidden sm:inline">Compartir</span>
-              </button>
-
-              {/* Botón eliminar - solo para el dueño */}
-              {isOwner && (
-                <button
-                  onClick={handleDelete}
-                  disabled={deleting}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-gray-500 hover:text-red-500 hover:bg-red-500/10 disabled:opacity-50"
-                  title="Eliminar recomendación"
-                >
-                  <Icons.Trash className="w-5 h-5" />
-                  <span className="font-medium hidden sm:inline">
-                    {deleting ? 'Eliminando...' : 'Eliminar'}
-                  </span>
-                </button>
-              )}
             </div>
           </div>
         </div>
