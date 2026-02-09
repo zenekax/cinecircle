@@ -341,7 +341,10 @@ export default function Messages() {
             >
               {/* Si es una película compartida */}
               {msg.tmdb_title && (
-                <div className="flex gap-3 mb-2">
+                <div
+                  className="flex gap-3 mb-2 cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={() => navigate(`/recommendations?tmdb_id=${msg.tmdb_id}&type=${msg.tmdb_type}`)}
+                >
                   {msg.tmdb_poster_url && (
                     <img
                       src={msg.tmdb_poster_url}
@@ -354,13 +357,17 @@ export default function Messages() {
                     <p className="text-sm opacity-80">
                       {msg.tmdb_type === 'movie' ? '🎬 Película' : '📺 Serie'}
                     </p>
+                    <p className="text-xs mt-1 opacity-60">Tocar para recomendar</p>
                   </div>
                 </div>
               )}
 
               {/* Si es una recomendación existente */}
               {msg.recommendation && (
-                <div className="flex gap-3 mb-2">
+                <div
+                  className="flex gap-3 mb-2 cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={() => navigate(`/post/${msg.recommendation_id}`)}
+                >
                   {msg.recommendation.poster_url && (
                     <img
                       src={msg.recommendation.poster_url}
@@ -373,6 +380,7 @@ export default function Messages() {
                     <p className="text-sm opacity-80">
                       {'⭐'.repeat(msg.recommendation.rating || 0)}
                     </p>
+                    <p className="text-xs mt-1 opacity-60">Tocar para ver</p>
                   </div>
                 </div>
               )}

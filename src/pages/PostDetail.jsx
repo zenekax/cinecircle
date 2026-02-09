@@ -20,6 +20,10 @@ export default function PostDetail() {
   const [likesCount, setLikesCount] = useState(0)
   const [animatingLike, setAnimatingLike] = useState(false)
   const [inWatchlist, setInWatchlist] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
+  // Verificar si es el dueño del post
+  const isOwner = user?.id === post?.user_id
 
   useEffect(() => {
     if (postId) {
@@ -271,6 +275,47 @@ export default function PostDetail() {
 
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`
     window.open(whatsappUrl, '_blank')
+  }
+
+  const handleDelete = async () => {
+    if (!confirm('¿Estás seguro de que querés eliminar esta recomendación? Esta acción no se puede deshacer.')) return
+
+    setDeleting(true)
+    try {
+      // Primero eliminar los likes asociados
+      await supabase
+        .from('likes')
+        .delete()
+        .eq('recommendation_id', postId)
+
+      // Luego eliminar los comentarios asociados
+      await supabase
+        .from('comments')
+        .delete()
+        .eq('recommendation_id', postId)
+
+      // Eliminar de watchlists
+      await supabase
+        .from('watchlist')
+        .delete()
+        .eq('recommendation_id', postId)
+
+      // Finalmente eliminar la recomendación
+      const { error } = await supabase
+        .from('recommendations')
+        .delete()
+        .eq('id', postId)
+        .eq('user_id', user.id) // Seguridad extra: solo el dueño puede borrar
+
+      if (error) throw error
+
+      // Redirigir al feed
+      navigate('/feed', { replace: true })
+    } catch (error) {
+      console.error('Error eliminando recomendación:', error.message)
+      alert('Error al eliminar la recomendación')
+      setDeleting(false)
+    }
   }
 
   if (loading) {
