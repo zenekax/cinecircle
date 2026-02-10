@@ -131,7 +131,7 @@ export default function Profile() {
 
       setStats(newStats)
 
-      // Calcular insignias
+      // Calcular insignias (incluyendo las de Cafecito)
       const userBadges = calculateBadges({
         totalRecommendations: recs.length,
         totalLikesReceived: likesReceived,
@@ -140,7 +140,7 @@ export default function Profile() {
         watchedCount: watchlist.filter(w => w.watched).length,
         createdAt: user?.created_at,
         username: profileData?.username
-      })
+      }, profileData?.cafecito_badges || [])
       setBadges(userBadges)
 
       // Cargar actividad reciente

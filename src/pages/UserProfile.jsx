@@ -106,7 +106,7 @@ export default function UserProfile() {
         likesReceived
       })
 
-      // Calcular insignias
+      // Calcular insignias (incluyendo las de Cafecito)
       const userBadges = calculateBadges({
         totalRecommendations: recCount || 0,
         totalLikesReceived: likesReceived,
@@ -115,7 +115,7 @@ export default function UserProfile() {
         watchedCount,
         createdAt: profile?.created_at,
         username: profile?.username
-      })
+      }, profile?.cafecito_badges || [])
       setBadges(userBadges)
     } catch (error) {
       console.error('Error cargando stats:', error.message)

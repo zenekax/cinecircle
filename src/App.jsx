@@ -17,6 +17,7 @@ import Notifications from './pages/Notifications'
 import Terms from './pages/Terms'
 import Privacy from './pages/Privacy'
 import Contact from './pages/Contact'
+import Admin from './pages/Admin'
 import Footer from './components/Footer'
 import './index.css'
 
@@ -48,6 +49,7 @@ function AppContent() {
           <Route path="/terminos" element={<Terms />} />
           <Route path="/privacidad" element={<Privacy />} />
           <Route path="/contacto" element={<Contact />} />
+          <Route path="/admin" element={<Admin />} />
         </Routes>
       </main>
       {!hideNavbar && <Footer />}

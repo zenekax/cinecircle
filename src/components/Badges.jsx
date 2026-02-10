@@ -186,6 +186,54 @@ export const BADGES = {
       requirement: null,
       type: 'special'
     },
+  ],
+
+  // Insignias de Cafecito (Supporters)
+  cafecito: [
+    {
+      id: 'marilyn',
+      name: 'Marilyn Monroe',
+      description: 'Supporter de CineCircle ☕',
+      icon: 'Star',
+      color: 'text-pink-400',
+      bgColor: 'bg-gradient-to-br from-pink-400/30 to-rose-500/30',
+      borderColor: 'border-pink-400',
+      requirement: null,
+      type: 'cafecito'
+    },
+    {
+      id: 'toretto',
+      name: 'Toretto',
+      description: 'Supporter de CineCircle 🏎️',
+      icon: 'Flame',
+      color: 'text-orange-500',
+      bgColor: 'bg-gradient-to-br from-orange-500/30 to-red-500/30',
+      borderColor: 'border-orange-500',
+      requirement: null,
+      type: 'cafecito'
+    },
+    {
+      id: 'alpacino',
+      name: 'Al Pacino',
+      description: 'Supporter de CineCircle 🎭',
+      icon: 'Drama',
+      color: 'text-amber-500',
+      bgColor: 'bg-gradient-to-br from-amber-500/30 to-yellow-600/30',
+      borderColor: 'border-amber-500',
+      requirement: null,
+      type: 'cafecito'
+    },
+    {
+      id: 'cineasta',
+      name: 'Cineasta',
+      description: 'Supporter VIP de CineCircle 🎬',
+      icon: 'Clapperboard',
+      color: 'text-yellow-400',
+      bgColor: 'bg-gradient-to-br from-yellow-400/30 to-amber-500/30',
+      borderColor: 'border-yellow-400',
+      requirement: null,
+      type: 'cafecito'
+    },
   ]
 }
 
@@ -255,6 +303,32 @@ const BadgeIcons = {
       <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
     </svg>
   ),
+  Star: ({ className }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+    </svg>
+  ),
+  Flame: ({ className }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 23c-3.65 0-7-2.76-7-7.5 0-3.17 1.86-5.49 3.41-7.26.78-.89 1.59-1.67 2.09-2.48.25-.4.45-.77.54-1.16.06-.27.09-.57-.04-.99-.09-.3-.27-.63-.5-1.02-.14-.24-.31-.5-.49-.78l-.39-.6c-.32-.51-.64-1.06-.85-1.69L8.5 1h.18c.34.06.67.17.97.33.42.22.8.51 1.15.85.68.66 1.27 1.52 1.82 2.42.6 1 1.15 2.08 1.66 3.08.26.51.5.99.75 1.43.42.73.82 1.36 1.33 1.86.4.4.89.74 1.53.97.48.18.93.27 1.37.31.3.03.6.04.92.04h.02l.27.01-.08.26c-.23.79-.65 1.45-1.16 2.02-.63.7-1.4 1.25-2.17 1.75-.56.36-1.13.69-1.65 1.02-1.78 1.13-3.18 2.39-3.18 4.65 0 1.87 1.35 3.5 3.5 3.5 1.5 0 2.5-.75 3-1.5.5.75 1 1.5 1 2.5 0 2.5-2.5 4.5-5 4.5z"/>
+    </svg>
+  ),
+  Drama: ({ className }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+      <line x1="9" y1="9" x2="9.01" y2="9" />
+      <line x1="15" y1="9" x2="15.01" y2="9" />
+    </svg>
+  ),
+  Clapperboard: ({ className }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 11v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8H4Z" />
+      <path d="m4 11-.88-2.87a2 2 0 0 1 1.33-2.5l11.48-3.5a2 2 0 0 1 2.5 1.32l.87 2.87L4 11.12Z" />
+      <path d="m6.6 4.99 3.38 4.2" />
+      <path d="m11.86 3.38 3.38 4.2" />
+    </svg>
+  ),
 }
 
 // Función para obtener el ícono de una insignia
@@ -274,12 +348,22 @@ const getBadgeIcon = (iconName, className) => {
 }
 
 // Función para calcular las insignias desbloqueadas
-export function calculateBadges(stats) {
+export function calculateBadges(stats, purchasedBadges = []) {
   const unlockedBadges = []
 
   // Insignia de Fundador (siempre primero si aplica)
   if (stats.username === FOUNDER_USERNAME) {
     unlockedBadges.push(BADGES.special[0]) // Fundador
+  }
+
+  // Insignias de Cafecito compradas (van primero después de Fundador)
+  if (purchasedBadges && purchasedBadges.length > 0) {
+    purchasedBadges.forEach(badgeId => {
+      const cafecitoBadge = BADGES.cafecito.find(b => b.id === badgeId)
+      if (cafecitoBadge) {
+        unlockedBadges.push(cafecitoBadge)
+      }
+    })
   }
 
   // Verificar insignias de recomendaciones
@@ -320,6 +404,16 @@ export function calculateBadges(stats) {
   }
 
   return unlockedBadges
+}
+
+// Función para obtener una insignia de cafecito por ID
+export function getCafecitoBadge(badgeId) {
+  return BADGES.cafecito.find(b => b.id === badgeId)
+}
+
+// Lista de todas las insignias de cafecito disponibles
+export function getAllCafecitoBadges() {
+  return BADGES.cafecito
 }
 
 // Componente de insignia individual
