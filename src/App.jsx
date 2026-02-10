@@ -18,13 +18,16 @@ import Terms from './pages/Terms'
 import Privacy from './pages/Privacy'
 import Contact from './pages/Contact'
 import Admin from './pages/Admin'
+import Groups from './pages/Groups'
+import GroupDetail from './pages/GroupDetail'
 import Footer from './components/Footer'
 import './index.css'
 
 function AppContent() {
   const location = useLocation()
-  // Ocultar navbar en la vista de chat individual
-  const hideNavbar = location.pathname.startsWith('/messages/') && location.pathname !== '/messages'
+  // Ocultar navbar en la vista de chat individual y grupos
+  const hideNavbar = (location.pathname.startsWith('/messages/') && location.pathname !== '/messages') ||
+                     (location.pathname.startsWith('/groups/') && location.pathname !== '/groups')
 
   return (
     <div className="min-h-screen bg-dark-500 flex flex-col">
@@ -50,6 +53,8 @@ function AppContent() {
           <Route path="/privacidad" element={<Privacy />} />
           <Route path="/contacto" element={<Contact />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/groups" element={<Groups />} />
+          <Route path="/groups/:groupId" element={<GroupDetail />} />
         </Routes>
       </main>
       {!hideNavbar && <Footer />}

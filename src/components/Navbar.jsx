@@ -72,7 +72,7 @@ export default function Navbar() {
   const navItems = [
     { path: '/feed', label: 'Feed', icon: Icons.Home, shortLabel: 'Feed' },
     { path: '/recommendations', label: 'Nuevo', icon: Icons.PlusCircle, shortLabel: 'Nuevo' },
-    { path: '/friends', label: 'Amigos', icon: Icons.Users, shortLabel: 'Amigos', badge: pendingFriends },
+    { path: '/groups', label: 'Grupos', icon: Icons.Users, shortLabel: 'Grupos' },
     { path: '/messages', label: 'Chat', icon: Icons.MessageCircle, shortLabel: 'Chat', badge: unreadCount },
     { path: '/watchlist', label: 'Mi Lista', icon: Icons.Bookmark, shortLabel: 'Lista' },
     { path: '/profile', label: 'Perfil', icon: Icons.User, shortLabel: 'Perfil' },
