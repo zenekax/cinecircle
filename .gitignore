@@ -27,3 +27,8 @@ dist-ssr
 .env
 .env.local
 .env.production
+
+# Nunca subir credenciales
+.env*
+!.env.example
+*.env.txt

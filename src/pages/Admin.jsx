@@ -6,7 +6,6 @@ import { Icons } from '../components/Icons'
 import { getAllCafecitoBadges, Badge } from '../components/Badges'
 
 // Solo el fundador puede acceder
-const ADMIN_USERNAME = 'nachito'
 
 export default function Admin() {
   const { user } = useAuth()
@@ -30,13 +29,14 @@ export default function Admin() {
     if (!user) return
 
     try {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('username')
-        .eq('id', user.id)
-        .single()
+      // La condición de admin vive en la base (tabla admins + RLS), no en el navegador.
+      const { data: adminRow } = await supabase
+        .from('admins')
+        .select('user_id')
+        .eq('user_id', user.id)
+        .maybeSingle()
 
-      if (profile?.username === ADMIN_USERNAME) {
+      if (adminRow) {
         setIsAdmin(true)
         loadUsers()
       } else {
